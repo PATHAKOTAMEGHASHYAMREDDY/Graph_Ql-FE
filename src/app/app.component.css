@@ -1,0 +1,136 @@
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; }
+
+.container {
+  max-width: 860px;
+  margin: 40px auto;
+  padding: 0 16px;
+}
+
+h1 {
+  font-size: 2rem;
+  color: #1a1a2e;
+  margin-bottom: 24px;
+  text-align: center;
+  letter-spacing: -0.5px;
+}
+
+h2 {
+  font-size: 1.1rem;
+  color: #333;
+  margin-bottom: 16px;
+}
+
+.card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+}
+
+.error {
+  background: #fff0f0;
+  color: #c0392b;
+  border: 1px solid #f5c6cb;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  font-size: 0.9rem;
+}
+
+.form-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.form-row input {
+  flex: 1;
+  min-width: 160px;
+  padding: 10px 14px;
+  border: 1.5px solid #ddd;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.form-row input:focus { border-color: #6c63ff; }
+
+.table-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.loading {
+  text-align: center;
+  color: #888;
+  padding: 20px;
+}
+
+.empty {
+  text-align: center;
+  color: #aaa;
+  padding: 20px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+thead tr {
+  background: #f7f8fc;
+}
+
+th {
+  text-align: left;
+  padding: 12px 14px;
+  color: #555;
+  font-weight: 600;
+  border-bottom: 2px solid #eee;
+}
+
+td {
+  padding: 12px 14px;
+  border-bottom: 1px solid #f0f0f0;
+  color: #333;
+}
+
+td input {
+  width: 100%;
+  padding: 7px 10px;
+  border: 1.5px solid #6c63ff;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  outline: none;
+}
+
+tbody tr:hover { background: #fafafa; }
+
+.actions { display: flex; gap: 8px; }
+
+button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 7px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.1s;
+}
+
+button:hover { opacity: 0.88; transform: translateY(-1px); }
+button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+.btn-add    { background: #6c63ff; color: #fff; }
+.btn-refresh{ background: #f0f0f0; color: #555; padding: 8px 14px; }
+.btn-edit   { background: #3498db; color: #fff; }
+.btn-delete { background: #e74c3c; color: #fff; }
+.btn-save   { background: #2ecc71; color: #fff; }
+.btn-cancel { background: #bdc3c7; color: #fff; }

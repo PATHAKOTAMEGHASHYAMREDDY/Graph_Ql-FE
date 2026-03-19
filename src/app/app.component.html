@@ -1,0 +1,78 @@
+<div class="container">
+  <h1>Student Manager</h1>
+
+  <!-- Error -->
+  <div class="error" *ngIf="error">{{ error }}</div>
+
+  <!-- Add Student Form -->
+  <div class="card">
+    <h2>Add Student</h2>
+    <div class="form-row">
+      <input
+        type="text"
+        placeholder="Name"
+        [(ngModel)]="newName"
+        (keyup.enter)="addStudent()"
+      />
+      <input
+        type="email"
+        placeholder="Email"
+        [(ngModel)]="newEmail"
+        (keyup.enter)="addStudent()"
+      />
+      <button class="btn-add" (click)="addStudent()" [disabled]="loading">
+        Add
+      </button>
+    </div>
+  </div>
+
+  <!-- Students Table -->
+  <div class="card">
+    <div class="table-header">
+      <h2>Students ({{ students.length }})</h2>
+      <button class="btn-refresh" (click)="loadStudents()" [disabled]="loading">
+        ↻ Refresh
+      </button>
+    </div>
+
+    <div class="loading" *ngIf="loading">Loading...</div>
+
+    <table *ngIf="!loading && students.length > 0">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Name</th>
+          <th>Email</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let student of students">
+          <td>{{ student.id }}</td>
+
+          <!-- View mode -->
+          <ng-container *ngIf="editingId !== student.id">
+            <td>{{ student.name }}</td>
+            <td>{{ student.email }}</td>
+            <td class="actions">
+              <button class="btn-edit" (click)="startEdit(student)">Edit</button>
+              <button class="btn-delete" (click)="deleteStudent(student.id)">Delete</button>
+            </td>
+          </ng-container>
+
+          <!-- Edit mode -->
+          <ng-container *ngIf="editingId === student.id">
+            <td><input type="text" [(ngModel)]="editName" /></td>
+            <td><input type="email" [(ngModel)]="editEmail" /></td>
+            <td class="actions">
+              <button class="btn-save" (click)="saveEdit(student.id)">Save</button>
+              <button class="btn-cancel" (click)="cancelEdit()">Cancel</button>
+            </td>
+          </ng-container>
+        </tr>
+      </tbody>
+    </table>
+
+    <p class="empty" *ngIf="!loading && students.length === 0">No students found.</p>
+  </div>
+</div>
