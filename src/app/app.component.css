@@ -3,7 +3,7 @@
 body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; }
 
 .container {
-  max-width: 860px;
+  max-width: 1100px;
   margin: 40px auto;
   padding: 0 16px;
 }
@@ -131,6 +131,12 @@ button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 .btn-add    { background: #6c63ff; color: #fff; }
 .btn-refresh{ background: #f0f0f0; color: #555; padding: 8px 14px; }
 .btn-edit   { background: #3498db; color: #fff; }
+.btn-marks  { background: #f39c12; color: #fff; }
 .btn-delete { background: #e74c3c; color: #fff; }
 .btn-save   { background: #2ecc71; color: #fff; }
 .btn-cancel { background: #bdc3c7; color: #fff; }
+
+.table-wrap { overflow-x: auto; }
+
+.total-col { text-align: center; }
+.total-val { font-weight: 600; color: #6c63ff; }

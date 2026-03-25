@@ -1,28 +1,15 @@
 <div class="container">
   <h1>Student Manager</h1>
 
-  <!-- Error -->
   <div class="error" *ngIf="error">{{ error }}</div>
 
   <!-- Add Student Form -->
   <div class="card">
     <h2>Add Student</h2>
     <div class="form-row">
-      <input
-        type="text"
-        placeholder="Name"
-        [(ngModel)]="newName"
-        (keyup.enter)="addStudent()"
-      />
-      <input
-        type="email"
-        placeholder="Email"
-        [(ngModel)]="newEmail"
-        (keyup.enter)="addStudent()"
-      />
-      <button class="btn-add" (click)="addStudent()" [disabled]="loading">
-        Add
-      </button>
+      <input type="text" placeholder="Name" [(ngModel)]="newName" (keyup.enter)="addStudent()" />
+      <input type="email" placeholder="Email" [(ngModel)]="newEmail" (keyup.enter)="addStudent()" />
+      <button class="btn-add" (click)="addStudent()" [disabled]="loading">Add</button>
     </div>
   </div>
 
@@ -30,48 +17,78 @@
   <div class="card">
     <div class="table-header">
       <h2>Students ({{ students.length }})</h2>
-      <button class="btn-refresh" (click)="loadStudents()" [disabled]="loading">
-        ↻ Refresh
-      </button>
+      <button class="btn-refresh" (click)="loadStudents()" [disabled]="loading">↻ Refresh</button>
     </div>
 
     <div class="loading" *ngIf="loading">Loading...</div>
 
-    <table *ngIf="!loading && students.length > 0">
-      <thead>
-        <tr>
-          <th>ID</th>
-          <th>Name</th>
-          <th>Email</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let student of students">
-          <td>{{ student.id }}</td>
+    <div class="table-wrap" *ngIf="!loading && students.length > 0">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Email</th>
+            <th>English</th>
+            <th>Tamil</th>
+            <th>Maths</th>
+            <th class="total-col">Total</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let student of students">
 
-          <!-- View mode -->
-          <ng-container *ngIf="editingId !== student.id">
-            <td>{{ student.name }}</td>
-            <td>{{ student.email }}</td>
-            <td class="actions">
-              <button class="btn-edit" (click)="startEdit(student)">Edit</button>
-              <button class="btn-delete" (click)="deleteStudent(student.id)">Delete</button>
-            </td>
-          </ng-container>
+            <!-- Normal row -->
+            <ng-container *ngIf="editingId !== student.id && marksEditingId !== student.id">
+              <td>{{ student.id }}</td>
+              <td>{{ student.name }}</td>
+              <td>{{ student.email }}</td>
+              <td>{{ student.english }}</td>
+              <td>{{ student.tamil }}</td>
+              <td>{{ student.maths }}</td>
+              <td class="total-col total-val">{{ student.total }}</td>
+              <td class="actions">
+                <button class="btn-edit" (click)="startEdit(student)">Edit</button>
+                <button class="btn-marks" (click)="startMarksEdit(student)">Marks</button>
+                <button class="btn-delete" (click)="deleteStudent(student.id)">Delete</button>
+              </td>
+            </ng-container>
 
-          <!-- Edit mode -->
-          <ng-container *ngIf="editingId === student.id">
-            <td><input type="text" [(ngModel)]="editName" /></td>
-            <td><input type="email" [(ngModel)]="editEmail" /></td>
-            <td class="actions">
-              <button class="btn-save" (click)="saveEdit(student.id)">Save</button>
-              <button class="btn-cancel" (click)="cancelEdit()">Cancel</button>
-            </td>
-          </ng-container>
-        </tr>
-      </tbody>
-    </table>
+            <!-- Edit student info -->
+            <ng-container *ngIf="editingId === student.id">
+              <td>{{ student.id }}</td>
+              <td><input type="text" [(ngModel)]="editName" /></td>
+              <td><input type="email" [(ngModel)]="editEmail" /></td>
+              <td>{{ student.english }}</td>
+              <td>{{ student.tamil }}</td>
+              <td>{{ student.maths }}</td>
+              <td class="total-col total-val">{{ student.total }}</td>
+              <td class="actions">
+                <button class="btn-save" (click)="saveEdit(student.id)">Save</button>
+                <button class="btn-cancel" (click)="cancelEdit()">Cancel</button>
+              </td>
+            </ng-container>
+
+            <!-- Edit marks -->
+            <ng-container *ngIf="marksEditingId === student.id">
+              <td>{{ student.id }}</td>
+              <td>{{ student.name }}</td>
+              <td>{{ student.email }}</td>
+              <td><input type="number" min="0" max="100" [(ngModel)]="editEnglish" /></td>
+              <td><input type="number" min="0" max="100" [(ngModel)]="editTamil" /></td>
+              <td><input type="number" min="0" max="100" [(ngModel)]="editMaths" /></td>
+              <td class="total-col total-val">{{ editEnglish + editTamil + editMaths }}</td>
+              <td class="actions">
+                <button class="btn-save" (click)="saveMarks(student.id)">Save</button>
+                <button class="btn-cancel" (click)="cancelMarksEdit()">Cancel</button>
+              </td>
+            </ng-container>
+
+          </tr>
+        </tbody>
+      </table>
+    </div>
 
     <p class="empty" *ngIf="!loading && students.length === 0">No students found.</p>
   </div>
