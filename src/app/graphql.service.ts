@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { environment } from '../environments/environment';
 
 export interface Student {
   id: number;
@@ -13,7 +14,7 @@ export interface Student {
   mathsStatus: string;
 }
 
-const API = 'http://localhost:4000/graphql';
+const API = environment.apiUrl;
 
 async function gql(query: string, variables: Record<string, unknown> = {}): Promise<unknown> {
   const res = await fetch(API, {
