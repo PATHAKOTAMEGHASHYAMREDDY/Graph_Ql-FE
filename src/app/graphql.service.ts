@@ -8,6 +8,9 @@ export interface Student {
   tamil: number;
   maths: number;
   total: number;
+  englishStatus: string;
+  tamilStatus: string;
+  mathsStatus: string;
 }
 
 const API = 'http://localhost:4000/graphql';
@@ -27,14 +30,14 @@ async function gql(query: string, variables: Record<string, unknown> = {}): Prom
 export class GraphqlService {
 
   async getStudents(): Promise<Student[]> {
-    const data = await gql(`{ users { id name email english tamil maths total } }`) as { users: Student[] };
+    const data = await gql(`{ users { id name email english tamil maths total englishStatus tamilStatus mathsStatus } }`) as { users: Student[] };
     return data.users;
   }
 
   async createStudent(name: string, email: string): Promise<Student> {
     const data = await gql(
       `mutation Create($name: String!, $email: String!) {
-        createUser(name: $name, email: $email) { id name email english tamil maths total }
+        createUser(name: $name, email: $email) { id name email english tamil maths total englishStatus tamilStatus mathsStatus }
       }`,
       { name, email }
     ) as { createUser: Student };
@@ -44,7 +47,7 @@ export class GraphqlService {
   async updateStudent(id: number, name: string, email: string): Promise<Student> {
     const data = await gql(
       `mutation Update($id: Int!, $name: String, $email: String) {
-        updateUser(id: $id, name: $name, email: $email) { id name email english tamil maths total }
+        updateUser(id: $id, name: $name, email: $email) { id name email english tamil maths total englishStatus tamilStatus mathsStatus }
       }`,
       { id, name, email }
     ) as { updateUser: Student };
@@ -54,7 +57,7 @@ export class GraphqlService {
   async updateMarks(id: number, english: number, tamil: number, maths: number): Promise<Student> {
     const data = await gql(
       `mutation UpdateMarks($id: Int!, $english: Int!, $tamil: Int!, $maths: Int!) {
-        updateMarks(id: $id, english: $english, tamil: $tamil, maths: $maths) { id name email english tamil maths total }
+        updateMarks(id: $id, english: $english, tamil: $tamil, maths: $maths) { id name email english tamil maths total englishStatus tamilStatus mathsStatus }
       }`,
       { id, english, tamil, maths }
     ) as { updateMarks: Student };

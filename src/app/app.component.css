@@ -140,3 +140,27 @@ button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
 .total-col { text-align: center; }
 .total-val { font-weight: 600; color: #6c63ff; }
+
+.status-badges {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.badge {
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.badge-pass {
+  background: #d4edda;
+  color: #155724;
+}
+
+.badge-fail {
+  background: #f8d7da;
+  color: #721c24;
+}

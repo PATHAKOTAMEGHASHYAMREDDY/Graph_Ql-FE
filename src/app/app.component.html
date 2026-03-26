@@ -33,6 +33,7 @@
             <th>Tamil</th>
             <th>Maths</th>
             <th class="total-col">Total</th>
+            <th>Status</th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -48,6 +49,13 @@
               <td>{{ student.tamil }}</td>
               <td>{{ student.maths }}</td>
               <td class="total-col total-val">{{ student.total }}</td>
+              <td>
+                <div class="status-badges">
+                  <span [class]="'badge ' + (student.englishStatus === 'Pass' ? 'badge-pass' : 'badge-fail')">E: {{ student.englishStatus }}</span>
+                  <span [class]="'badge ' + (student.tamilStatus === 'Pass' ? 'badge-pass' : 'badge-fail')">T: {{ student.tamilStatus }}</span>
+                  <span [class]="'badge ' + (student.mathsStatus === 'Pass' ? 'badge-pass' : 'badge-fail')">M: {{ student.mathsStatus }}</span>
+                </div>
+              </td>
               <td class="actions">
                 <button class="btn-edit" (click)="startEdit(student)">Edit</button>
                 <button class="btn-marks" (click)="startMarksEdit(student)">Marks</button>
@@ -64,6 +72,13 @@
               <td>{{ student.tamil }}</td>
               <td>{{ student.maths }}</td>
               <td class="total-col total-val">{{ student.total }}</td>
+              <td>
+                <div class="status-badges">
+                  <span [class]="'badge ' + (student.englishStatus === 'Pass' ? 'badge-pass' : 'badge-fail')">E: {{ student.englishStatus }}</span>
+                  <span [class]="'badge ' + (student.tamilStatus === 'Pass' ? 'badge-pass' : 'badge-fail')">T: {{ student.tamilStatus }}</span>
+                  <span [class]="'badge ' + (student.mathsStatus === 'Pass' ? 'badge-pass' : 'badge-fail')">M: {{ student.mathsStatus }}</span>
+                </div>
+              </td>
               <td class="actions">
                 <button class="btn-save" (click)="saveEdit(student.id)">Save</button>
                 <button class="btn-cancel" (click)="cancelEdit()">Cancel</button>
@@ -79,6 +94,13 @@
               <td><input type="number" min="0" max="100" [(ngModel)]="editTamil" /></td>
               <td><input type="number" min="0" max="100" [(ngModel)]="editMaths" /></td>
               <td class="total-col total-val">{{ editEnglish + editTamil + editMaths }}</td>
+              <td>
+                <div class="status-badges">
+                  <span [class]="'badge ' + (editEnglish >= 40 ? 'badge-pass' : 'badge-fail')">E: {{ editEnglish >= 40 ? 'Pass' : 'Fail' }}</span>
+                  <span [class]="'badge ' + (editTamil >= 40 ? 'badge-pass' : 'badge-fail')">T: {{ editTamil >= 40 ? 'Pass' : 'Fail' }}</span>
+                  <span [class]="'badge ' + (editMaths >= 40 ? 'badge-pass' : 'badge-fail')">M: {{ editMaths >= 40 ? 'Pass' : 'Fail' }}</span>
+                </div>
+              </td>
               <td class="actions">
                 <button class="btn-save" (click)="saveMarks(student.id)">Save</button>
                 <button class="btn-cancel" (click)="cancelMarksEdit()">Cancel</button>
