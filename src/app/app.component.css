@@ -111,6 +111,15 @@ td input {
   outline: none;
 }
 
+td input.invalid {
+  border-color: #e74c3c;
+  background-color: #fff5f5;
+}
+
+td input.invalid:focus {
+  border-color: #c0392b;
+}
+
 tbody tr:hover { background: #fafafa; }
 
 .actions { display: flex; gap: 8px; }
@@ -163,4 +172,33 @@ button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 .badge-fail {
   background: #f8d7da;
   color: #721c24;
+}
+
+/* Header section with toggle button */
+.header-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.btn-toggle-view {
+  background: #6c63ff;
+  color: white;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(108, 99, 255, 0.3);
+}
+
+.btn-toggle-view:hover {
+  background: #5a52d5;
+}
+
+/* Charts view */
+.charts-view {
+  width: 100%;
 }

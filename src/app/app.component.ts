@@ -2,11 +2,12 @@
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { GraphqlService, Student } from './graphql.service';
+import { ChartsComponent } from './charts.component';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ChartsComponent],
   templateUrl: './app.component.html',
   styleUrl: './app.component.css'
 })
@@ -14,6 +15,7 @@ export class AppComponent implements OnInit {
   students: Student[] = [];
   loading = false;
   error = '';
+  showCharts = false;
 
   newName = '';
   newEmail = '';
@@ -28,6 +30,10 @@ export class AppComponent implements OnInit {
   editMaths = 0;
 
   constructor(private gql: GraphqlService) {}
+
+  toggleCharts() {
+    this.showCharts = !this.showCharts;
+  }
 
   ngOnInit() { this.loadStudents(); }
 
@@ -103,6 +109,14 @@ export class AppComponent implements OnInit {
   }
 
   async saveMarks(id: number) {
+    // Validate marks are between 0 and 100
+    if (this.editEnglish < 0 || this.editEnglish > 100 ||
+        this.editTamil < 0 || this.editTamil > 100 ||
+        this.editMaths < 0 || this.editMaths > 100) {
+      this.error = 'Marks must be between 0 and 100';
+      return;
+    }
+
     this.loading = true;
     this.error = '';
     try {
