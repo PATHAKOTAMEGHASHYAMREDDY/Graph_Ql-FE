@@ -1,6 +1,6 @@
 import { Component, Input, OnChanges, SimpleChanges, AfterViewInit, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Student } from './graphql.service';
+import { Student } from '../graphql.service';
 import { Chart, ChartConfiguration, registerables } from 'chart.js';
 
 Chart.register(...registerables);
@@ -9,101 +9,8 @@ Chart.register(...registerables);
   selector: 'app-charts',
   standalone: true,
   imports: [CommonModule],
-  template: `
-    <div class="charts-container">
-      <div class="charts-grid">
-        <div class="chart-section">
-          <h3>Total Students</h3>
-          <canvas #studentCountChart></canvas>
-        </div>
-
-        <div class="chart-section">
-          <h3>Top 5 Students</h3>
-          <canvas #topStudentsChart></canvas>
-        </div>
-
-        <div class="chart-section">
-          <h3>Subject Average</h3>
-          <canvas #subjectAvgChart></canvas>
-        </div>
-
-        <div class="chart-section">
-          <h3>Pass/Fail</h3>
-          <canvas #passFailChart></canvas>
-        </div>
-      </div>
-
-      <div class="chart-section-full">
-        <h3>All Students Performance</h3>
-        <canvas #allSubjectsChart></canvas>
-      </div>
-    </div>
-  `,
-  styles: [`
-    .charts-container {
-      padding: 0;
-      background: transparent;
-    }
-
-    .charts-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 16px;
-      margin-bottom: 16px;
-    }
-
-    .chart-section {
-      background: white;
-      padding: 16px;
-      border-radius: 8px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-    }
-
-    .chart-section h3 {
-      margin: 0 0 12px 0;
-      color: #1a1a2e;
-      font-size: 0.95rem;
-      font-weight: 600;
-    }
-
-    .chart-section-full {
-      background: white;
-      padding: 20px;
-      border-radius: 8px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-    }
-
-    .chart-section-full h3 {
-      margin: 0 0 16px 0;
-      color: #1a1a2e;
-      font-size: 1.1rem;
-      font-weight: 600;
-    }
-
-    canvas {
-      max-height: 200px;
-      width: 100% !important;
-      height: auto !important;
-    }
-
-    .chart-section-full canvas {
-      max-height: 280px;
-    }
-
-    @media (max-width: 768px) {
-      .charts-grid {
-        grid-template-columns: 1fr;
-      }
-
-      canvas {
-        max-height: 180px;
-      }
-
-      .chart-section-full canvas {
-        max-height: 240px;
-      }
-    }
-  `]
+  templateUrl: './charts.component.html',
+  styleUrl: './charts.component.css'
 })
 export class ChartsComponent implements OnChanges, AfterViewInit {
   @Input() students: Student[] = [];

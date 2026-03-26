@@ -2,7 +2,7 @@
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { GraphqlService, Student } from './graphql.service';
-import { ChartsComponent } from './charts.component';
+import { ChartsComponent } from './charts/charts.component';
 
 @Component({
   selector: 'app-root',
