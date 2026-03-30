@@ -1,0 +1,187 @@
+<div class="auth-page">
+  <div class="auth-card">
+
+    <div class="auth-logo">🎓</div>
+    <h1 class="auth-title">Faculty Registration</h1>
+
+    <!-- ── Step Indicator ── -->
+    <div class="steps">
+      <div class="step" [class.active]="stepNumber >= 1" [class.done]="stepNumber > 1">
+        <div class="step-dot">
+          <mat-icon *ngIf="stepNumber > 1">check</mat-icon>
+          <span *ngIf="stepNumber <= 1">1</span>
+        </div>
+        <span class="step-label">Your Info</span>
+      </div>
+      <div class="step-line" [class.filled]="stepNumber > 1"></div>
+      <div class="step" [class.active]="stepNumber >= 2" [class.done]="stepNumber > 2">
+        <div class="step-dot">
+          <mat-icon *ngIf="stepNumber > 2">check</mat-icon>
+          <span *ngIf="stepNumber <= 2">2</span>
+        </div>
+        <span class="step-label">Verify OTP</span>
+      </div>
+      <div class="step-line" [class.filled]="stepNumber > 2"></div>
+      <div class="step" [class.active]="stepNumber >= 3">
+        <div class="step-dot"><span>3</span></div>
+        <span class="step-label">Set Password</span>
+      </div>
+    </div>
+
+    <!-- Alerts -->
+    <div class="auth-error" *ngIf="error">
+      <mat-icon>error_outline</mat-icon> {{ error }}
+    </div>
+    <div class="auth-success" *ngIf="success">
+      <mat-icon>check_circle_outline</mat-icon> {{ success }}
+    </div>
+
+    <!-- ════════════════════════════════════════
+         STEP 1 — Personal Info
+    ════════════════════════════════════════ -->
+    <div class="section" *ngIf="step === 'email'">
+      <div class="section-header">
+        <mat-icon>person</mat-icon>
+        <span>Step 1 — Personal Information</span>
+      </div>
+      <form (ngSubmit)="sendOtp()" class="auth-form">
+        <div class="field">
+          <label for="signup-name">Full Name</label>
+          <div class="input-wrap">
+            <mat-icon class="input-icon">badge</mat-icon>
+            <input id="signup-name" type="text" placeholder="e.g. Dr. John Smith"
+              [(ngModel)]="name" name="name" autocomplete="name" />
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="signup-class">Class &amp; Section</label>
+          <div class="input-wrap">
+            <mat-icon class="input-icon">class</mat-icon>
+            <input id="signup-class" type="text" placeholder="e.g. 10th A, Class 6B, Year 2"
+              [(ngModel)]="classSection" name="classSection" />
+          </div>
+          <span class="field-hint">The class you manage (e.g. 10th A, 11th Science B)</span>
+        </div>
+        <div class="field">
+          <label for="signup-email">Email Address</label>
+          <div class="input-wrap">
+            <mat-icon class="input-icon">email</mat-icon>
+            <input id="signup-email" type="email" placeholder="your@email.com"
+              [(ngModel)]="email" name="email" autocomplete="email" />
+          </div>
+          <span class="field-hint">A 6-digit OTP will be sent to this email</span>
+        </div>
+        <button class="btn-primary" type="submit" [disabled]="loading">
+          <mat-icon>send</mat-icon>
+          <span *ngIf="!loading">Send OTP</span>
+          <span *ngIf="loading" class="spinner-text"><span class="dot-spin"></span> Sending...</span>
+        </button>
+      </form>
+    </div>
+
+    <!-- ════════════════════════════════════════
+         STEP 2 — OTP Verification
+    ════════════════════════════════════════ -->
+    <div class="section" *ngIf="step === 'otp'">
+      <div class="section-header">
+        <mat-icon>mark_email_read</mat-icon>
+        <span>Step 2 — Verify Your Email</span>
+      </div>
+      <p class="section-desc">Enter the 6-digit code sent to <strong>{{ email }}</strong></p>
+      <form (ngSubmit)="verifyOtp()" class="auth-form">
+        <div class="field">
+          <label for="otp-input">One-Time Password (OTP)</label>
+          <div class="input-wrap">
+            <mat-icon class="input-icon">pin</mat-icon>
+            <input id="otp-input" type="text" inputmode="numeric"
+              placeholder="_ _ _ _ _ _" [(ngModel)]="otp" name="otp"
+              maxlength="6" class="otp-input" />
+          </div>
+        </div>
+        <button class="btn-primary" type="submit" [disabled]="loading">
+          <mat-icon>verified</mat-icon>
+          Verify OTP
+        </button>
+        <div class="resend-row">
+          <span>Didn't receive it?</span>
+          <button type="button" class="btn-resend" (click)="resendOtp()" [disabled]="resendCooldown > 0 || loading">
+            {{ resendCooldown > 0 ? 'Resend in ' + resendCooldown + 's' : 'Resend OTP' }}
+          </button>
+        </div>
+        <button type="button" class="btn-back" (click)="goBack()">
+          <mat-icon>arrow_back</mat-icon> Back
+        </button>
+      </form>
+    </div>
+
+    <!-- ════════════════════════════════════════
+         STEP 3 — Set Password
+    ════════════════════════════════════════ -->
+    <div class="section" *ngIf="step === 'password'">
+      <div class="section-header">
+        <mat-icon>lock</mat-icon>
+        <span>Step 3 — Create Your Password</span>
+      </div>
+      <form (ngSubmit)="register()" class="auth-form">
+        <div class="field">
+          <label for="reg-password">Password</label>
+          <div class="input-wrap">
+            <mat-icon class="input-icon">lock_outline</mat-icon>
+            <input id="reg-password" [type]="showPassword ? 'text' : 'password'"
+              placeholder="Minimum 6 characters"
+              [(ngModel)]="password" name="password" autocomplete="new-password" />
+            <button type="button" class="toggle-pass" (click)="togglePassword()">
+              <mat-icon>{{ showPassword ? 'visibility_off' : 'visibility' }}</mat-icon>
+            </button>
+          </div>
+          <!-- Strength bar -->
+          <div class="strength-bar" *ngIf="password">
+            <div class="strength-fill"
+              [style.width.%]="password.length >= 12 ? 100 : password.length >= 8 ? 66 : 33"
+              [class.weak]="password.length < 8"
+              [class.medium]="password.length >= 8 && password.length < 12"
+              [class.strong]="password.length >= 12">
+            </div>
+            <span class="strength-label">
+              {{ password.length < 8 ? 'Weak' : password.length < 12 ? 'Good' : 'Strong' }}
+            </span>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="reg-confirm">Confirm Password</label>
+          <div class="input-wrap">
+            <mat-icon class="input-icon">lock_outline</mat-icon>
+            <input id="reg-confirm" [type]="showConfirm ? 'text' : 'password'"
+              placeholder="Re-enter your password"
+              [(ngModel)]="confirmPassword" name="confirmPassword"
+              autocomplete="new-password"
+              [class.mismatch]="confirmPassword && password !== confirmPassword" />
+            <button type="button" class="toggle-pass" (click)="toggleConfirm()">
+              <mat-icon>{{ showConfirm ? 'visibility_off' : 'visibility' }}</mat-icon>
+            </button>
+          </div>
+          <span class="mismatch-hint" *ngIf="confirmPassword && password !== confirmPassword">
+            Passwords don't match
+          </span>
+        </div>
+
+        <button class="btn-primary" type="submit"
+          [disabled]="loading || (!!confirmPassword && password !== confirmPassword)">
+          <mat-icon>how_to_reg</mat-icon>
+          <span *ngIf="!loading">Create Account</span>
+          <span *ngIf="loading" class="spinner-text"><span class="dot-spin"></span> Creating...</span>
+        </button>
+        <button type="button" class="btn-back" (click)="goBack()">
+          <mat-icon>arrow_back</mat-icon> Back
+        </button>
+      </form>
+    </div>
+
+    <div class="auth-footer">
+      <p>Already have an account? <a routerLink="/login">Sign in</a></p>
+    </div>
+
+  </div>
+</div>

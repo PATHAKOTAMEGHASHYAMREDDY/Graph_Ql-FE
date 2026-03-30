@@ -1,4 +1,4 @@
 export const environment = {
   production: false,
-  apiUrl: 'https://graph-ql-d6co.onrender.com'
+  apiUrl: "http://localhost:4000/graphql"
 };

@@ -1,0 +1,61 @@
+<div class="auth-page">
+  <div class="auth-card">
+    <div class="auth-logo">🎓</div>
+
+    <div class="auth-header">
+      <h1>Faculty Login</h1>
+      <p>Sign in to manage your class</p>
+    </div>
+
+    <div class="auth-error" *ngIf="error">
+      <mat-icon>warning</mat-icon> {{ error }}
+    </div>
+
+    <form (ngSubmit)="login()" class="auth-form">
+
+      <div class="field">
+        <label for="login-email">Email Address</label>
+        <div class="input-wrap">
+          <mat-icon class="input-icon">email</mat-icon>
+          <input
+            id="login-email"
+            type="email"
+            placeholder="your@email.com"
+            [(ngModel)]="email"
+            name="email"
+            autocomplete="email"
+          />
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="login-password">Password</label>
+        <div class="input-wrap">
+          <mat-icon class="input-icon">lock</mat-icon>
+          <input
+            id="login-password"
+            [type]="showPassword ? 'text' : 'password'"
+            placeholder="Enter your password"
+            [(ngModel)]="password"
+            name="password"
+            autocomplete="current-password"
+          />
+          <button type="button" class="toggle-pass" (click)="togglePassword()" tabindex="-1">
+            <mat-icon>{{ showPassword ? 'visibility_off' : 'visibility' }}</mat-icon>
+          </button>
+        </div>
+      </div>
+
+      <button class="btn-primary" type="submit" [disabled]="loading">
+        <span *ngIf="!loading">Sign In</span>
+        <span *ngIf="loading" class="spinner-text">
+          <span class="dot-spin"></span> Signing in...
+        </span>
+      </button>
+    </form>
+
+    <div class="auth-footer">
+      <p>New faculty? <a routerLink="/signup">Create an account</a></p>
+    </div>
+  </div>
+</div>

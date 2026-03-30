@@ -1,0 +1,159 @@
+<div class="dashboard-root">
+  <!-- ── Topbar ── -->
+  <nav class="topbar">
+    <div class="topbar-left">
+      <span class="topbar-logo">🎓</span>
+      <span class="topbar-title">Faculty Portal</span>
+    </div>
+    <div class="topbar-right">
+      <div class="faculty-chip" *ngIf="faculty">
+        <div class="faculty-avatar">{{ faculty.name.charAt(0).toUpperCase() }}</div>
+        <div class="faculty-info">
+          <span class="faculty-name">{{ faculty.name }}</span>
+          <span class="faculty-class" *ngIf="faculty.classSection">{{ faculty.classSection }}</span>
+        </div>
+      </div>
+      <button class="btn-logout" (click)="logout()">⏻ Logout</button>
+    </div>
+  </nav>
+
+  <!-- ── Main ── -->
+  <div class="container">
+    <!-- Header -->
+    <div class="header-section">
+      <div>
+        <h1>Student Management</h1>
+        <p class="subtitle" *ngIf="faculty">
+          {{ faculty.classSection ? faculty.classSection + ' · ' : '' }}{{ students.length }} student(s)
+        </p>
+      </div>
+      <button class="btn-toggle-view" (click)="toggleCharts()">
+        {{ showCharts ? '📋 Show Students' : '📊 Show Charts' }}
+      </button>
+    </div>
+
+    <div class="error" *ngIf="error">⚠️ {{ error }}</div>
+
+    <!-- ── Students View ── -->
+    <div *ngIf="!showCharts">
+      <!-- Add Student -->
+      <div class="card">
+        <h2>➕ Add Student</h2>
+        <div class="form-row">
+          <input type="text" placeholder="Student name" [(ngModel)]="newName" (keyup.enter)="addStudent()" />
+          <input type="email" placeholder="Student email" [(ngModel)]="newEmail" (keyup.enter)="addStudent()" />
+          <button class="btn-add" (click)="addStudent()" [disabled]="loading">Add Student</button>
+        </div>
+      </div>
+
+      <!-- Students Table -->
+      <div class="card">
+        <div class="table-header">
+          <h2>📋 Students ({{ students.length }})</h2>
+          <button class="btn-refresh" (click)="loadStudents()" [disabled]="loading">↻ Refresh</button>
+        </div>
+
+        <div class="loading" *ngIf="loading">Loading...</div>
+
+        <div class="table-wrap" *ngIf="!loading && students.length > 0">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Email</th>
+                <th>English</th>
+                <th>Tamil</th>
+                <th>Maths</th>
+                <th class="total-col">Total</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let student of students">
+
+                <!-- Normal row -->
+                <ng-container *ngIf="editingId !== student.id && marksEditingId !== student.id">
+                  <td>{{ student.id }}</td>
+                  <td>{{ student.name }}</td>
+                  <td>{{ student.email }}</td>
+                  <td>{{ student.english }}</td>
+                  <td>{{ student.tamil }}</td>
+                  <td>{{ student.maths }}</td>
+                  <td class="total-col total-val">{{ student.total }}</td>
+                  <td>
+                    <div class="status-badges">
+                      <span [class]="'badge ' + (student.englishStatus === 'Pass' ? 'badge-pass' : 'badge-fail')">E: {{ student.englishStatus }}</span>
+                      <span [class]="'badge ' + (student.tamilStatus === 'Pass' ? 'badge-pass' : 'badge-fail')">T: {{ student.tamilStatus }}</span>
+                      <span [class]="'badge ' + (student.mathsStatus === 'Pass' ? 'badge-pass' : 'badge-fail')">M: {{ student.mathsStatus }}</span>
+                    </div>
+                  </td>
+                  <td class="actions">
+                    <button class="btn-edit" (click)="startEdit(student)">Edit</button>
+                    <button class="btn-marks" (click)="startMarksEdit(student)">Marks</button>
+                    <button class="btn-delete" (click)="deleteStudent(student.id)">Delete</button>
+                  </td>
+                </ng-container>
+
+                <!-- Edit student info -->
+                <ng-container *ngIf="editingId === student.id">
+                  <td>{{ student.id }}</td>
+                  <td><input type="text" [(ngModel)]="editName" /></td>
+                  <td><input type="email" [(ngModel)]="editEmail" /></td>
+                  <td>{{ student.english }}</td>
+                  <td>{{ student.tamil }}</td>
+                  <td>{{ student.maths }}</td>
+                  <td class="total-col total-val">{{ student.total }}</td>
+                  <td>
+                    <div class="status-badges">
+                      <span [class]="'badge ' + (student.englishStatus === 'Pass' ? 'badge-pass' : 'badge-fail')">E: {{ student.englishStatus }}</span>
+                      <span [class]="'badge ' + (student.tamilStatus === 'Pass' ? 'badge-pass' : 'badge-fail')">T: {{ student.tamilStatus }}</span>
+                      <span [class]="'badge ' + (student.mathsStatus === 'Pass' ? 'badge-pass' : 'badge-fail')">M: {{ student.mathsStatus }}</span>
+                    </div>
+                  </td>
+                  <td class="actions">
+                    <button class="btn-save" (click)="saveEdit(student.id)">Save</button>
+                    <button class="btn-cancel" (click)="cancelEdit()">Cancel</button>
+                  </td>
+                </ng-container>
+
+                <!-- Edit marks -->
+                <ng-container *ngIf="marksEditingId === student.id">
+                  <td>{{ student.id }}</td>
+                  <td>{{ student.name }}</td>
+                  <td>{{ student.email }}</td>
+                  <td><input type="number" min="0" max="100" [(ngModel)]="editEnglish" [class.invalid]="editEnglish < 0 || editEnglish > 100" /></td>
+                  <td><input type="number" min="0" max="100" [(ngModel)]="editTamil" [class.invalid]="editTamil < 0 || editTamil > 100" /></td>
+                  <td><input type="number" min="0" max="100" [(ngModel)]="editMaths" [class.invalid]="editMaths < 0 || editMaths > 100" /></td>
+                  <td class="total-col total-val">{{ editEnglish + editTamil + editMaths }}</td>
+                  <td>
+                    <div class="status-badges">
+                      <span [class]="'badge ' + (editEnglish >= 40 ? 'badge-pass' : 'badge-fail')">E: {{ editEnglish >= 40 ? 'Pass' : 'Fail' }}</span>
+                      <span [class]="'badge ' + (editTamil >= 40 ? 'badge-pass' : 'badge-fail')">T: {{ editTamil >= 40 ? 'Pass' : 'Fail' }}</span>
+                      <span [class]="'badge ' + (editMaths >= 40 ? 'badge-pass' : 'badge-fail')">M: {{ editMaths >= 40 ? 'Pass' : 'Fail' }}</span>
+                    </div>
+                  </td>
+                  <td class="actions">
+                    <button class="btn-save" (click)="saveMarks(student.id)" [disabled]="editEnglish < 0 || editEnglish > 100 || editTamil < 0 || editTamil > 100 || editMaths < 0 || editMaths > 100">Save</button>
+                    <button class="btn-cancel" (click)="cancelMarksEdit()">Cancel</button>
+                  </td>
+                </ng-container>
+
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p class="empty" *ngIf="!loading && students.length === 0">
+          {{ '🎒 No students yet. Add your first student above!' }}
+        </p>
+      </div>
+    </div>
+
+    <!-- Charts View -->
+    <div *ngIf="showCharts" class="charts-view">
+      <app-charts [students]="students"></app-charts>
+    </div>
+  </div>
+</div>

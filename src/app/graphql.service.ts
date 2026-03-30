@@ -15,11 +15,16 @@ export interface Student {
 }
 
 const API = environment.apiUrl;
+const TOKEN_KEY = 'faculty_token';
 
 async function gql(query: string, variables: Record<string, unknown> = {}): Promise<unknown> {
+  const token = localStorage.getItem(TOKEN_KEY);
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+
   const res = await fetch(API, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify({ query, variables })
   });
   const json = await res.json();
