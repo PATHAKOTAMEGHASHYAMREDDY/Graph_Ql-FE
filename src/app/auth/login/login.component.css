@@ -55,6 +55,23 @@
 }
 .auth-error mat-icon { font-size: 18px; width: 18px; height: 18px; }
 
+/* Amber banner shown when the session has expired (token deleted) */
+.auth-session-expired {
+  background: #fff8e1;
+  border: 1px solid #f9a825;
+  border-radius: 8px;
+  padding: 10px 14px;
+  color: #e65100;
+  font-size: 13px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+}
+.auth-session-expired mat-icon { font-size: 18px; width: 18px; height: 18px; }
+
+
 .auth-form {
   display: flex;
   flex-direction: column;

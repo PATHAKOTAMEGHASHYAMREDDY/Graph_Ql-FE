@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { environment } from '../environments/environment';
+import { IndexedDbService } from './indexed-db.service';
 
 export interface Student {
   id: number;
@@ -35,11 +36,17 @@ async function gql(query: string, variables: Record<string, unknown> = {}): Prom
 @Injectable({ providedIn: 'root' })
 export class GraphqlService {
 
+  constructor(private idb: IndexedDbService) {}
+
+  /** Fetches all students from the backend and mirrors them into IndexedDB. */
   async getStudents(): Promise<Student[]> {
     const data = await gql(`{ users { id name email english tamil maths total englishStatus tamilStatus mathsStatus } }`) as { users: Student[] };
+    // Sync full list into IndexedDB — visible in DevTools → Application → IndexedDB → FacultyPortalDB → students
+    this.idb.saveStudents(data.users).catch(console.warn);
     return data.users;
   }
 
+  /** Creates a student in the DB and upserts the new record into IndexedDB. */
   async createStudent(name: string, email: string): Promise<Student> {
     const data = await gql(
       `mutation Create($name: String!, $email: String!) {
@@ -47,9 +54,11 @@ export class GraphqlService {
       }`,
       { name, email }
     ) as { createUser: Student };
+    this.idb.saveStudent(data.createUser).catch(console.warn);
     return data.createUser;
   }
 
+  /** Updates student info and syncs the updated record into IndexedDB. */
   async updateStudent(id: number, name: string, email: string): Promise<Student> {
     const data = await gql(
       `mutation Update($id: Int!, $name: String, $email: String) {
@@ -57,9 +66,11 @@ export class GraphqlService {
       }`,
       { id, name, email }
     ) as { updateUser: Student };
+    this.idb.saveStudent(data.updateUser).catch(console.warn);
     return data.updateUser;
   }
 
+  /** Updates marks and syncs the updated record into IndexedDB. */
   async updateMarks(id: number, english: number, tamil: number, maths: number): Promise<Student> {
     const data = await gql(
       `mutation UpdateMarks($id: Int!, $english: Int!, $tamil: Int!, $maths: Int!) {
@@ -67,13 +78,16 @@ export class GraphqlService {
       }`,
       { id, english, tamil, maths }
     ) as { updateMarks: Student };
+    this.idb.saveStudent(data.updateMarks).catch(console.warn);
     return data.updateMarks;
   }
 
+  /** Deletes a student from the DB and removes them from IndexedDB. */
   async deleteStudent(id: number): Promise<void> {
     await gql(
       `mutation Delete($id: Int!) { deleteUser(id: $id) }`,
       { id }
     );
+    this.idb.removeStudent(id).catch(console.warn);
   }
 }

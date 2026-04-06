@@ -7,7 +7,14 @@
       <p>Sign in to manage your class</p>
     </div>
 
-    <div class="auth-error" *ngIf="error">
+    <!-- Session-expired banner (shown when redirected with ?expired=true) -->
+    <div class="auth-session-expired" *ngIf="sessionExpired && !error || error?.startsWith('⚠️')">
+      <mat-icon>timer_off</mat-icon>
+      <span>Session expired — please log in again.</span>
+    </div>
+
+    <!-- General error banner (login failures, validation errors) -->
+    <div class="auth-error" *ngIf="error && !sessionExpired">
       <mat-icon>warning</mat-icon> {{ error }}
     </div>
 
@@ -46,7 +53,7 @@
         </div>
       </div>
 
-      <button class="btn-primary" type="submit" [disabled]="loading">
+      <button class="btn-primary" type="submit" [disabled]="loading" id="login-submit-btn">
         <span *ngIf="!loading">Sign In</span>
         <span *ngIf="loading" class="spinner-text">
           <span class="dot-spin"></span> Signing in...
