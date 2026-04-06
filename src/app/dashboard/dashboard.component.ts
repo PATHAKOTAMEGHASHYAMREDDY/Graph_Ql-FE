@@ -15,11 +15,21 @@ import { ChartsComponent } from '../charts/charts.component';
 })
 export class DashboardComponent implements OnInit {
   students: Student[] = [];
+  filteredStudents: Student[] = [];
+  paginatedStudents: Student[] = [];
   loading = false;
   error = '';
   showCharts = false;
 
   faculty: Faculty | null = null;
+
+  // Search
+  searchQuery = '';
+
+  // Pagination
+  currentPage = 1;
+  pageSize = 5;
+  totalPages = 1;
 
   newName = '';
   newEmail = '';
@@ -48,11 +58,99 @@ export class DashboardComponent implements OnInit {
 
   logout() { this.auth.logout(); }
 
+  onSearch() {
+    this.currentPage = 1;
+    this.applyFilters();
+  }
+
+  clearSearch() {
+    this.searchQuery = '';
+    this.onSearch();
+  }
+
+  applyFilters() {
+    // Filter students based on search query
+    if (this.searchQuery.trim()) {
+      const query = this.searchQuery.toLowerCase();
+      this.filteredStudents = this.students.filter(s => 
+        s.name.toLowerCase().includes(query) ||
+        s.email.toLowerCase().includes(query) ||
+        s.id.toString().includes(query)
+      );
+    } else {
+      this.filteredStudents = [...this.students];
+    }
+
+    // Calculate pagination
+    this.totalPages = Math.ceil(this.filteredStudents.length / this.pageSize);
+    if (this.totalPages === 0) this.totalPages = 1;
+    if (this.currentPage > this.totalPages) this.currentPage = this.totalPages;
+    this.updatePagination();
+  }
+
+  updatePagination() {
+    const startIndex = (this.currentPage - 1) * this.pageSize;
+    const endIndex = startIndex + this.pageSize;
+    this.paginatedStudents = this.filteredStudents.slice(startIndex, endIndex);
+  }
+
+  goToPage(page: number) {
+    if (page >= 1 && page <= this.totalPages) {
+      this.currentPage = page;
+      this.updatePagination();
+    }
+  }
+
+  nextPage() {
+    if (this.currentPage < this.totalPages) {
+      this.currentPage++;
+      this.updatePagination();
+    }
+  }
+
+  previousPage() {
+    if (this.currentPage > 1) {
+      this.currentPage--;
+      this.updatePagination();
+    }
+  }
+
+  get pageNumbers(): number[] {
+    const pages: number[] = [];
+    const maxVisible = 5;
+    
+    if (this.totalPages <= maxVisible) {
+      return Array.from({ length: this.totalPages }, (_, i) => i + 1);
+    }
+    
+    let start = Math.max(1, this.currentPage - 2);
+    let end = Math.min(this.totalPages, start + maxVisible - 1);
+    
+    if (end - start < maxVisible - 1) {
+      start = Math.max(1, end - maxVisible + 1);
+    }
+    
+    for (let i = start; i <= end; i++) {
+      pages.push(i);
+    }
+    
+    return pages;
+  }
+
+  get showingFrom(): number {
+    return this.filteredStudents.length === 0 ? 0 : (this.currentPage - 1) * this.pageSize + 1;
+  }
+
+  get showingTo(): number {
+    return Math.min(this.currentPage * this.pageSize, this.filteredStudents.length);
+  }
+
   async loadStudents() {
     this.loading = true;
     this.error = '';
     try {
       this.students = (await this.gql.getStudents()).sort((a, b) => a.id - b.id);
+      this.applyFilters();
     } catch (e: unknown) {
       this.error = (e as Error).message;
     } finally {
@@ -69,6 +167,7 @@ export class DashboardComponent implements OnInit {
       this.students = [...this.students, student].sort((a, b) => a.id - b.id);
       this.newName = '';
       this.newEmail = '';
+      this.applyFilters();
     } catch (e: unknown) {
       this.error = (e as Error).message;
     } finally {
@@ -97,6 +196,7 @@ export class DashboardComponent implements OnInit {
       const updated = await this.gql.updateStudent(id, this.editName.trim(), this.editEmail.trim());
       this.students = this.students.map(s => s.id === id ? updated : s);
       this.cancelEdit();
+      this.applyFilters();
     } catch (e: unknown) {
       this.error = (e as Error).message;
     } finally {
@@ -132,6 +232,7 @@ export class DashboardComponent implements OnInit {
       const updated = await this.gql.updateMarks(id, this.editEnglish, this.editTamil, this.editMaths);
       this.students = this.students.map(s => s.id === id ? updated : s);
       this.cancelMarksEdit();
+      this.applyFilters();
     } catch (e: unknown) {
       this.error = (e as Error).message;
     } finally {
@@ -146,6 +247,7 @@ export class DashboardComponent implements OnInit {
     try {
       await this.gql.deleteStudent(id);
       this.students = this.students.filter(s => s.id !== id);
+      this.applyFilters();
     } catch (e: unknown) {
       this.error = (e as Error).message;
     } finally {

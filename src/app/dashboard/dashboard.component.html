@@ -49,13 +49,28 @@
       <!-- Students Table -->
       <div class="card">
         <div class="table-header">
-          <h2>📋 Students ({{ students.length }})</h2>
+          <h2>📋 Students ({{ filteredStudents.length }})</h2>
           <button class="btn-refresh" (click)="loadStudents()" [disabled]="loading">↻ Refresh</button>
+        </div>
+
+        <!-- Search Bar -->
+        <div class="search-bar">
+          <div class="search-input-wrapper">
+            <span class="search-icon">🔍</span>
+            <input 
+              type="text" 
+              class="search-input" 
+              placeholder="Search by name, email, or ID..." 
+              [(ngModel)]="searchQuery" 
+              (input)="onSearch()"
+            />
+            <button class="clear-search" *ngIf="searchQuery" (click)="clearSearch()">✕</button>
+          </div>
         </div>
 
         <div class="loading" *ngIf="loading">Loading...</div>
 
-        <div class="table-wrap" *ngIf="!loading && students.length > 0">
+        <div class="table-wrap" *ngIf="!loading && paginatedStudents.length > 0">
           <table>
             <thead>
               <tr>
@@ -71,7 +86,7 @@
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let student of students">
+              <tr *ngFor="let student of paginatedStudents">
 
                 <!-- Normal row -->
                 <ng-container *ngIf="editingId !== student.id && marksEditingId !== student.id">
@@ -144,6 +159,43 @@
             </tbody>
           </table>
         </div>
+
+        <!-- Pagination -->
+        <div class="pagination" *ngIf="!loading && filteredStudents.length > 0">
+          <div class="pagination-info">
+            Showing {{ showingFrom }} to {{ showingTo }} of {{ filteredStudents.length }} students
+          </div>
+          <div class="pagination-controls">
+            <button 
+              class="btn-page" 
+              (click)="previousPage()" 
+              [disabled]="currentPage === 1"
+            >
+              ‹ Previous
+            </button>
+            
+            <button 
+              *ngFor="let page of pageNumbers" 
+              class="btn-page" 
+              [class.active]="page === currentPage"
+              (click)="goToPage(page)"
+            >
+              {{ page }}
+            </button>
+            
+            <button 
+              class="btn-page" 
+              (click)="nextPage()" 
+              [disabled]="currentPage === totalPages"
+            >
+              Next ›
+            </button>
+          </div>
+        </div>
+
+        <p class="empty" *ngIf="!loading && filteredStudents.length === 0 && searchQuery">
+          🔍 No students found matching "{{ searchQuery }}"
+        </p>
 
         <p class="empty" *ngIf="!loading && students.length === 0">
           {{ '🎒 No students yet. Add your first student above!' }}
