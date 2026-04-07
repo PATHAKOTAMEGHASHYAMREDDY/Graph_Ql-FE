@@ -30,6 +30,16 @@ export interface Faculty {
 export interface AuthPayload {
   token: string;
   faculty: Faculty;
+  debug?: {
+    type: string;
+    email?: string;
+    maxAttempts?: number;
+    remainingAttempts?: number;
+    waitMinutes?: number;
+    reason?: string;
+    timestamp: string;
+    message?: string;
+  };
 }
 
 // ── Constants ────────────────────────────────────────────────────────────────
@@ -37,10 +47,7 @@ const API = environment.apiUrl;
 const TOKEN_KEY = 'faculty_token';
 const FACULTY_KEY = 'faculty_data';
 
-/**
- * Shared GraphQL helper — sends a POST to /graphql with an optional
- * Bearer token attached.  Throws on GraphQL errors.
- */
+// ── GraphQL helper with debug logging ─────────────────────────────────────────
 async function gql(
   query: string,
   variables: Record<string, unknown> = {},
@@ -55,7 +62,38 @@ async function gql(
     body: JSON.stringify({ query, variables }),
   });
   const json = await res.json();
-  if (json.errors) throw new Error(json.errors[0].message);
+  
+  // Log GraphQL responses for debugging
+  if (json.errors) {
+    const error = json.errors[0];
+    console.group('🔴 GraphQL Error');
+    console.log('Message:', error.message);
+    console.log('Extensions:', error.extensions);
+    
+    // Log rate limiting info if present
+    if (error.extensions?.debug) {
+      console.group('📊 Rate Limit Debug Info');
+      console.log('Type:', error.extensions.debug.type);
+      console.log('Email:', error.extensions.debug.email);
+      console.log('Remaining Attempts:', error.extensions.debug.remainingAttempts);
+      console.log('Wait Minutes:', error.extensions.debug.waitMinutes);
+      console.log('Timestamp:', error.extensions.debug.timestamp);
+      console.groupEnd();
+    }
+    console.groupEnd();
+    
+    throw new Error(error.message);
+  }
+  
+  // Log successful responses with debug info
+  if (json.data?.loginFaculty?.debug) {
+    console.group('✅ Login Success Debug Info');
+    console.log('Type:', json.data.loginFaculty.debug.type);
+    console.log('Remaining Attempts:', json.data.loginFaculty.debug.remainingAttempts);
+    console.log('Timestamp:', json.data.loginFaculty.debug.timestamp);
+    console.groupEnd();
+  }
+  
   return json.data;
 }
 
@@ -229,21 +267,35 @@ export class AuthService implements OnDestroy {
   // ── Login ──────────────────────────────────────────────────────────────────
 
   async login(email: string, password: string): Promise<AuthPayload> {
+    console.group('🔐 Login Attempt');
+    console.log('Email:', email);
+    console.log('Timestamp:', new Date().toISOString());
+    
     // Hash the password with SHA-256 before sending over the network.
-    // The backend compares this hash against bcrypt(sha256(plaintext)) stored at registration.
     const hashedPassword = await sha256(password);
 
-    const data = await gql(
-      `mutation Login($email: String!, $password: String!) {
-        loginFaculty(email: $email, password: $password) {
-          token
-          faculty { id name email createdAt }
-        }
-      }`,
-      { email, password: hashedPassword }
-    ) as { loginFaculty: AuthPayload };
-    this._store(data.loginFaculty);
-    return data.loginFaculty;
+    try {
+      const data = await gql(
+        `mutation Login($email: String!, $password: String!) {
+          loginFaculty(email: $email, password: $password) {
+            token
+            faculty { id name email createdAt }
+            debug { type email maxAttempts remainingAttempts waitMinutes reason timestamp message }
+          }
+        }`,
+        { email, password: hashedPassword }
+      ) as { loginFaculty: AuthPayload };
+      
+      console.log('Login successful!');
+      console.groupEnd();
+      
+      this._store(data.loginFaculty);
+      return data.loginFaculty;
+    } catch (error) {
+      console.error('Login failed:', error);
+      console.groupEnd();
+      throw error;
+    }
   }
 
   // ── Lifecycle ──────────────────────────────────────────────────────────────
