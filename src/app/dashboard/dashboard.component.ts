@@ -6,6 +6,14 @@ import { GraphqlService, Student } from '../graphql.service';
 import { AuthService, Faculty } from '../auth/auth.service';
 import { ChartsComponent } from '../charts/charts.component';
 
+export interface StoredFile {
+  name: string;
+  type: string;
+  size: number;
+  dataUrl: string;
+  uploadedAt: string;
+}
+
 @Component({
   selector: 'app-dashboard',
   standalone: true,
@@ -43,6 +51,10 @@ export class DashboardComponent implements OnInit {
   editTamil = 0;
   editMaths = 0;
 
+  // File upload — stored in localStorage keyed as 'student_files_<id>'
+  uploadedFiles: Map<number, StoredFile[]> = new Map();
+  expandedFilesId: number | null = null; // which student's file panel is open
+
   constructor(
     private gql: GraphqlService,
     private auth: AuthService,
@@ -52,6 +64,111 @@ export class DashboardComponent implements OnInit {
   ngOnInit() {
     this.faculty = this.auth.getFaculty();
     this.loadStudents();
+  }
+
+  // ── File helpers ──────────────────────────────────────────────────────────
+
+  private storageKey(studentId: number): string {
+    return `student_files_${studentId}`;
+  }
+
+  private loadFilesFromStorage(studentId: number): StoredFile[] {
+    const raw = localStorage.getItem(this.storageKey(studentId));
+    return raw ? (JSON.parse(raw) as StoredFile[]) : [];
+  }
+
+  private saveFilesToStorage(studentId: number, files: StoredFile[]): void {
+    localStorage.setItem(this.storageKey(studentId), JSON.stringify(files));
+  }
+
+  getFiles(studentId: number): StoredFile[] {
+    if (!this.uploadedFiles.has(studentId)) {
+      this.uploadedFiles.set(studentId, this.loadFilesFromStorage(studentId));
+    }
+    return this.uploadedFiles.get(studentId) ?? [];
+  }
+
+  fileCount(studentId: number): number {
+    return this.getFiles(studentId).length;
+  }
+
+  toggleFilesPanel(studentId: number): void {
+    this.expandedFilesId = this.expandedFilesId === studentId ? null : studentId;
+  }
+
+  handleFileUpload(event: Event, studentId: number): void {
+    const input = event.target as HTMLInputElement;
+    if (!input.files?.length) return;
+
+    const existingFiles = this.getFiles(studentId);
+    const maxFiles = 3;
+    const remaining = maxFiles - existingFiles.length;
+
+    if (remaining <= 0) {
+      alert('Maximum 3 documents allowed per student. Please remove a file before adding more.');
+      input.value = '';
+      return;
+    }
+
+    const filesToProcess = Array.from(input.files).slice(0, remaining);
+
+    if (input.files.length > remaining) {
+      alert(`Only ${remaining} more file(s) can be added (max 3). Extra files were skipped.`);
+    }
+
+    let pending = filesToProcess.length;
+
+    filesToProcess.forEach(file => {
+      if (file.size > 5 * 1024 * 1024) {
+        alert(`"${file.name}" exceeds 5 MB and was skipped.`);
+        pending--;
+        if (pending === 0) {
+          this.uploadedFiles.set(studentId, [...existingFiles]);
+          this.saveFilesToStorage(studentId, existingFiles);
+          this.expandedFilesId = studentId;
+        }
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => {
+        existingFiles.push({
+          name: file.name,
+          type: file.type,
+          size: file.size,
+          dataUrl: reader.result as string,
+          uploadedAt: new Date().toISOString()
+        });
+        pending--;
+        if (pending === 0) {
+          this.uploadedFiles.set(studentId, [...existingFiles]);
+          this.saveFilesToStorage(studentId, existingFiles);
+          this.expandedFilesId = studentId; // auto-open panel to show uploaded files
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+
+    input.value = '';
+  }
+
+  removeFile(studentId: number, index: number): void {
+    const files = this.getFiles(studentId);
+    files.splice(index, 1);
+    this.uploadedFiles.set(studentId, [...files]);
+    this.saveFilesToStorage(studentId, files);
+  }
+
+  downloadFile(file: StoredFile): void {
+    const a = document.createElement('a');
+    a.href = file.dataUrl;
+    a.download = file.name;
+    a.click();
+  }
+
+  formatFileSize(bytes: number): string {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
   }
 
   toggleCharts() { this.showCharts = !this.showCharts; }

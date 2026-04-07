@@ -40,7 +40,7 @@
       <div class="card">
         <h2>➕ Add Student</h2>
         <div class="form-row">
-          <input type="text" placeholder="Student name" [(ngModel)]="newName" (keyup.enter)="addStudent()" />
+          <input type="text"  placeholder="Student name"  [(ngModel)]="newName"  (keyup.enter)="addStudent()" />
           <input type="email" placeholder="Student email" [(ngModel)]="newEmail" (keyup.enter)="addStudent()" />
           <button class="btn-add" (click)="addStudent()" [disabled]="loading">Add Student</button>
         </div>
@@ -57,11 +57,11 @@
         <div class="search-bar">
           <div class="search-input-wrapper">
             <span class="search-icon">🔍</span>
-            <input 
-              type="text" 
-              class="search-input" 
-              placeholder="Search by name, email, or ID..." 
-              [(ngModel)]="searchQuery" 
+            <input
+              type="text"
+              class="search-input"
+              placeholder="Search by name, email, or ID..."
+              [(ngModel)]="searchQuery"
               (input)="onSearch()"
             />
             <button class="clear-search" *ngIf="searchQuery" (click)="clearSearch()">✕</button>
@@ -83,79 +83,155 @@
                 <th class="total-col">Total</th>
                 <th>Status</th>
                 <th>Actions</th>
+                <th>Files</th>
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let student of paginatedStudents">
+              <!-- ✅ ng-container as ngFor host → student <tr> and files-panel <tr>
+                   are valid SIBLING rows, not nested — fixes the broken layout -->
+              <ng-container *ngFor="let student of paginatedStudents">
 
-                <!-- Normal row -->
-                <ng-container *ngIf="editingId !== student.id && marksEditingId !== student.id">
-                  <td>{{ student.id }}</td>
-                  <td>{{ student.name }}</td>
-                  <td>{{ student.email }}</td>
-                  <td>{{ student.english }}</td>
-                  <td>{{ student.tamil }}</td>
-                  <td>{{ student.maths }}</td>
-                  <td class="total-col total-val">{{ student.total }}</td>
-                  <td>
-                    <div class="status-badges">
-                      <span [class]="'badge ' + (student.englishStatus === 'Pass' ? 'badge-pass' : 'badge-fail')">E: {{ student.englishStatus }}</span>
-                      <span [class]="'badge ' + (student.tamilStatus === 'Pass' ? 'badge-pass' : 'badge-fail')">T: {{ student.tamilStatus }}</span>
-                      <span [class]="'badge ' + (student.mathsStatus === 'Pass' ? 'badge-pass' : 'badge-fail')">M: {{ student.mathsStatus }}</span>
+                <!-- ── Student data row ── -->
+                <tr>
+                  <!-- Normal view -->
+                  <ng-container *ngIf="editingId !== student.id && marksEditingId !== student.id">
+                    <td>{{ student.id }}</td>
+                    <td>{{ student.name }}</td>
+                    <td>{{ student.email }}</td>
+                    <td>{{ student.english }}</td>
+                    <td>{{ student.tamil }}</td>
+                    <td>{{ student.maths }}</td>
+                    <td class="total-col total-val">{{ student.total }}</td>
+                    <td>
+                      <div class="status-badges">
+                        <span [class]="'badge ' + (student.englishStatus === 'Pass' ? 'badge-pass' : 'badge-fail')">E: {{ student.englishStatus }}</span>
+                        <span [class]="'badge ' + (student.tamilStatus  === 'Pass' ? 'badge-pass' : 'badge-fail')">T: {{ student.tamilStatus }}</span>
+                        <span [class]="'badge ' + (student.mathsStatus  === 'Pass' ? 'badge-pass' : 'badge-fail')">M: {{ student.mathsStatus }}</span>
+                      </div>
+                    </td>
+                    <td class="actions">
+                      <button class="btn-edit"   (click)="startEdit(student)">Edit</button>
+                      <button class="btn-marks"  (click)="startMarksEdit(student)">Marks</button>
+                      <button class="btn-delete" (click)="deleteStudent(student.id)">Delete</button>
+                    </td>
+                    <td class="files-col">
+                      <!-- Hidden file input: opened directly by the button -->
+                      <input
+                        #fileInputToggle
+                        type="file"
+                        multiple
+                        style="display:none"
+                        (change)="handleFileUpload($event, student.id)"
+                      />
+                      <!-- If no files: clicking opens picker directly -->
+                      <button
+                        *ngIf="fileCount(student.id) === 0"
+                        class="btn-files-toggle btn-files-upload"
+                        (click)="fileInputToggle.click()"
+                      >
+                        📂 Upload
+                      </button>
+                      <!-- If files exist: clicking toggles the view panel -->
+                      <button
+                        *ngIf="fileCount(student.id) > 0"
+                        class="btn-files-toggle"
+                        (click)="toggleFilesPanel(student.id)"
+                      >
+                        📁 {{ fileCount(student.id) }} file{{ fileCount(student.id) > 1 ? 's' : '' }}
+                        <span class="toggle-arrow">{{ expandedFilesId === student.id ? '▲' : '▼' }}</span>
+                      </button>
+                    </td>
+                  </ng-container>
+
+                  <!-- Edit student info -->
+                  <ng-container *ngIf="editingId === student.id">
+                    <td>{{ student.id }}</td>
+                    <td><input type="text"  [(ngModel)]="editName" /></td>
+                    <td><input type="email" [(ngModel)]="editEmail" /></td>
+                    <td>{{ student.english }}</td>
+                    <td>{{ student.tamil }}</td>
+                    <td>{{ student.maths }}</td>
+                    <td class="total-col total-val">{{ student.total }}</td>
+                    <td>
+                      <div class="status-badges">
+                        <span [class]="'badge ' + (student.englishStatus === 'Pass' ? 'badge-pass' : 'badge-fail')">E: {{ student.englishStatus }}</span>
+                        <span [class]="'badge ' + (student.tamilStatus  === 'Pass' ? 'badge-pass' : 'badge-fail')">T: {{ student.tamilStatus }}</span>
+                        <span [class]="'badge ' + (student.mathsStatus  === 'Pass' ? 'badge-pass' : 'badge-fail')">M: {{ student.mathsStatus }}</span>
+                      </div>
+                    </td>
+                    <td class="actions">
+                      <button class="btn-save"   (click)="saveEdit(student.id)">Save</button>
+                      <button class="btn-cancel" (click)="cancelEdit()">Cancel</button>
+                    </td>
+                    <td></td>
+                  </ng-container>
+
+                  <!-- Edit marks -->
+                  <ng-container *ngIf="marksEditingId === student.id">
+                    <td>{{ student.id }}</td>
+                    <td>{{ student.name }}</td>
+                    <td>{{ student.email }}</td>
+                    <td><input type="number" min="0" max="100" [(ngModel)]="editEnglish" [class.invalid]="editEnglish < 0 || editEnglish > 100" /></td>
+                    <td><input type="number" min="0" max="100" [(ngModel)]="editTamil"   [class.invalid]="editTamil   < 0 || editTamil   > 100" /></td>
+                    <td><input type="number" min="0" max="100" [(ngModel)]="editMaths"   [class.invalid]="editMaths   < 0 || editMaths   > 100" /></td>
+                    <td class="total-col total-val">{{ editEnglish + editTamil + editMaths }}</td>
+                    <td>
+                      <div class="status-badges">
+                        <span [class]="'badge ' + (editEnglish >= 40 ? 'badge-pass' : 'badge-fail')">E: {{ editEnglish >= 40 ? 'Pass' : 'Fail' }}</span>
+                        <span [class]="'badge ' + (editTamil   >= 40 ? 'badge-pass' : 'badge-fail')">T: {{ editTamil   >= 40 ? 'Pass' : 'Fail' }}</span>
+                        <span [class]="'badge ' + (editMaths   >= 40 ? 'badge-pass' : 'badge-fail')">M: {{ editMaths   >= 40 ? 'Pass' : 'Fail' }}</span>
+                      </div>
+                    </td>
+                    <td class="actions">
+                      <button class="btn-save" (click)="saveMarks(student.id)"
+                        [disabled]="editEnglish < 0 || editEnglish > 100 || editTamil < 0 || editTamil > 100 || editMaths < 0 || editMaths > 100">Save</button>
+                      <button class="btn-cancel" (click)="cancelMarksEdit()">Cancel</button>
+                    </td>
+                    <td></td>
+                  </ng-container>
+                </tr>
+
+                <!-- ── Files panel row — valid sibling <tr> ── -->
+                <tr class="files-panel-row" *ngIf="expandedFilesId === student.id && fileCount(student.id) > 0">
+                  <td colspan="10">
+                    <div class="files-panel">
+                      <!-- Panel header with title + add-more button -->
+                      <div class="files-panel-header">
+                        <span>📁 Documents for <strong>{{ student.name }}</strong></span>
+                        <span class="files-count-hint">{{ fileCount(student.id) }}/3 files</span>
+                        <span class="header-spacer"></span>
+                        <!-- Add more: only if under 3 files -->
+                        <ng-container *ngIf="fileCount(student.id) < 3">
+                          <input
+                            #addMoreInput
+                            type="file"
+                            multiple
+                            style="display:none"
+                            (change)="handleFileUpload($event, student.id)"
+                          />
+                          <button class="btn-add-more" (click)="addMoreInput.click()">➕ Add</button>
+                        </ng-container>
+                      </div>
+
+                      <!-- File list -->
+                      <div class="files-list">
+                        <div class="file-item" *ngFor="let file of getFiles(student.id); let i = index">
+                          <div class="file-icon">{{ file.type.startsWith('image/') ? '🖼️' : file.type === 'application/pdf' ? '📄' : '📎' }}</div>
+                          <div class="file-info">
+                            <span class="file-name">{{ file.name }}</span>
+                            <span class="file-meta">{{ formatFileSize(file.size) }} · {{ file.uploadedAt | date:'dd MMM yyyy, h:mm a' }}</span>
+                          </div>
+                          <div class="file-actions">
+                            <button class="btn-download"    (click)="downloadFile(file)">⬇ Download</button>
+                            <button class="btn-file-delete" (click)="removeFile(student.id, i)">🗑</button>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </td>
-                  <td class="actions">
-                    <button class="btn-edit" (click)="startEdit(student)">Edit</button>
-                    <button class="btn-marks" (click)="startMarksEdit(student)">Marks</button>
-                    <button class="btn-delete" (click)="deleteStudent(student.id)">Delete</button>
-                  </td>
-                </ng-container>
+                </tr>
 
-                <!-- Edit student info -->
-                <ng-container *ngIf="editingId === student.id">
-                  <td>{{ student.id }}</td>
-                  <td><input type="text" [(ngModel)]="editName" /></td>
-                  <td><input type="email" [(ngModel)]="editEmail" /></td>
-                  <td>{{ student.english }}</td>
-                  <td>{{ student.tamil }}</td>
-                  <td>{{ student.maths }}</td>
-                  <td class="total-col total-val">{{ student.total }}</td>
-                  <td>
-                    <div class="status-badges">
-                      <span [class]="'badge ' + (student.englishStatus === 'Pass' ? 'badge-pass' : 'badge-fail')">E: {{ student.englishStatus }}</span>
-                      <span [class]="'badge ' + (student.tamilStatus === 'Pass' ? 'badge-pass' : 'badge-fail')">T: {{ student.tamilStatus }}</span>
-                      <span [class]="'badge ' + (student.mathsStatus === 'Pass' ? 'badge-pass' : 'badge-fail')">M: {{ student.mathsStatus }}</span>
-                    </div>
-                  </td>
-                  <td class="actions">
-                    <button class="btn-save" (click)="saveEdit(student.id)">Save</button>
-                    <button class="btn-cancel" (click)="cancelEdit()">Cancel</button>
-                  </td>
-                </ng-container>
-
-                <!-- Edit marks -->
-                <ng-container *ngIf="marksEditingId === student.id">
-                  <td>{{ student.id }}</td>
-                  <td>{{ student.name }}</td>
-                  <td>{{ student.email }}</td>
-                  <td><input type="number" min="0" max="100" [(ngModel)]="editEnglish" [class.invalid]="editEnglish < 0 || editEnglish > 100" /></td>
-                  <td><input type="number" min="0" max="100" [(ngModel)]="editTamil" [class.invalid]="editTamil < 0 || editTamil > 100" /></td>
-                  <td><input type="number" min="0" max="100" [(ngModel)]="editMaths" [class.invalid]="editMaths < 0 || editMaths > 100" /></td>
-                  <td class="total-col total-val">{{ editEnglish + editTamil + editMaths }}</td>
-                  <td>
-                    <div class="status-badges">
-                      <span [class]="'badge ' + (editEnglish >= 40 ? 'badge-pass' : 'badge-fail')">E: {{ editEnglish >= 40 ? 'Pass' : 'Fail' }}</span>
-                      <span [class]="'badge ' + (editTamil >= 40 ? 'badge-pass' : 'badge-fail')">T: {{ editTamil >= 40 ? 'Pass' : 'Fail' }}</span>
-                      <span [class]="'badge ' + (editMaths >= 40 ? 'badge-pass' : 'badge-fail')">M: {{ editMaths >= 40 ? 'Pass' : 'Fail' }}</span>
-                    </div>
-                  </td>
-                  <td class="actions">
-                    <button class="btn-save" (click)="saveMarks(student.id)" [disabled]="editEnglish < 0 || editEnglish > 100 || editTamil < 0 || editTamil > 100 || editMaths < 0 || editMaths > 100">Save</button>
-                    <button class="btn-cancel" (click)="cancelMarksEdit()">Cancel</button>
-                  </td>
-                </ng-container>
-
-              </tr>
+              </ng-container>
             </tbody>
           </table>
         </div>
@@ -166,37 +242,20 @@
             Showing {{ showingFrom }} to {{ showingTo }} of {{ filteredStudents.length }} students
           </div>
           <div class="pagination-controls">
-            <button 
-              class="btn-page" 
-              (click)="previousPage()" 
-              [disabled]="currentPage === 1"
-            >
-              ‹ Previous
-            </button>
-            
-            <button 
-              *ngFor="let page of pageNumbers" 
-              class="btn-page" 
+            <button class="btn-page" (click)="previousPage()" [disabled]="currentPage === 1">‹ Previous</button>
+            <button
+              *ngFor="let page of pageNumbers"
+              class="btn-page"
               [class.active]="page === currentPage"
               (click)="goToPage(page)"
-            >
-              {{ page }}
-            </button>
-            
-            <button 
-              class="btn-page" 
-              (click)="nextPage()" 
-              [disabled]="currentPage === totalPages"
-            >
-              Next ›
-            </button>
+            >{{ page }}</button>
+            <button class="btn-page" (click)="nextPage()" [disabled]="currentPage === totalPages">Next ›</button>
           </div>
         </div>
 
         <p class="empty" *ngIf="!loading && filteredStudents.length === 0 && searchQuery">
           🔍 No students found matching "{{ searchQuery }}"
         </p>
-
         <p class="empty" *ngIf="!loading && students.length === 0">
           {{ '🎒 No students yet. Add your first student above!' }}
         </p>
