@@ -49,7 +49,7 @@
       <!-- Students Table -->
       <div class="card">
         <div class="table-header">
-          <h2>📋 Students ({{ filteredStudents.length }})</h2>
+          <h2>📋 Students ({{ pagination.totalCount }})</h2>
           <button class="btn-refresh" (click)="loadStudents()" [disabled]="loading">↻ Refresh</button>
         </div>
 
@@ -70,7 +70,7 @@
 
         <div class="loading" *ngIf="loading">Loading...</div>
 
-        <div class="table-wrap" *ngIf="!loading && paginatedStudents.length > 0">
+        <div class="table-wrap" *ngIf="!loading && students.length > 0">
           <table>
             <thead>
               <tr>
@@ -89,7 +89,7 @@
             <tbody>
               <!-- ✅ ng-container as ngFor host → student <tr> and files-panel <tr>
                    are valid SIBLING rows, not nested — fixes the broken layout -->
-              <ng-container *ngFor="let student of paginatedStudents">
+              <ng-container *ngFor="let student of students">
 
                 <!-- ── Student data row ── -->
                 <tr>
@@ -237,26 +237,26 @@
         </div>
 
         <!-- Pagination -->
-        <div class="pagination" *ngIf="!loading && filteredStudents.length > 0">
+        <div class="pagination" *ngIf="!loading && pagination.totalCount > 0">
           <div class="pagination-info">
-            Showing {{ showingFrom }} to {{ showingTo }} of {{ filteredStudents.length }} students
+            Showing {{ showingFrom }} to {{ showingTo }} of {{ pagination.totalCount }} students
           </div>
           <div class="pagination-controls">
-            <button class="btn-page" (click)="previousPage()" [disabled]="currentPage === 1">‹ Previous</button>
+            <button class="btn-page" (click)="previousPage()" [disabled]="!pagination.hasPreviousPage">‹ Previous</button>
             <button
               *ngFor="let page of pageNumbers"
               class="btn-page"
-              [class.active]="page === currentPage"
+              [class.active]="page === pagination.currentPage"
               (click)="goToPage(page)"
             >{{ page }}</button>
-            <button class="btn-page" (click)="nextPage()" [disabled]="currentPage === totalPages">Next ›</button>
+            <button class="btn-page" (click)="nextPage()" [disabled]="!pagination.hasNextPage">Next ›</button>
           </div>
         </div>
 
-        <p class="empty" *ngIf="!loading && filteredStudents.length === 0 && searchQuery">
+        <p class="empty" *ngIf="!loading && students.length === 0 && searchQuery">
           🔍 No students found matching "{{ searchQuery }}"
         </p>
-        <p class="empty" *ngIf="!loading && students.length === 0">
+        <p class="empty" *ngIf="!loading && students.length === 0 && !searchQuery">
           {{ '🎒 No students yet. Add your first student above!' }}
         </p>
       </div>

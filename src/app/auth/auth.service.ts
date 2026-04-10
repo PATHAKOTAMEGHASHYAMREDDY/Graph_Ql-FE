@@ -61,6 +61,17 @@ async function gql(
     headers,
     body: JSON.stringify({ query, variables }),
   });
+
+  // Handle rate limiting errors (429 status)
+  if (res.status === 429) {
+    const errorData = await res.json();
+    console.group('🚫 Rate Limit Exceeded');
+    console.log('Message:', errorData.message);
+    console.log('Retry After:', errorData.retryAfter);
+    console.groupEnd();
+    throw new Error(errorData.message || 'Too many requests. Please try again later after 5 min.');
+  }
+
   const json = await res.json();
   
   // Log GraphQL responses for debugging

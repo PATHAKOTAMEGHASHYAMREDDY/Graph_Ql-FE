@@ -15,6 +15,20 @@ export interface Student {
   mathsStatus: string;
 }
 
+export interface PaginationInfo {
+  currentPage: number;
+  pageSize: number;
+  totalPages: number;
+  totalCount: number;
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
+}
+
+export interface PaginatedStudents {
+  users: Student[];
+  pagination: PaginationInfo;
+}
+
 const API = environment.apiUrl;
 const TOKEN_KEY = 'faculty_token';
 
@@ -28,6 +42,13 @@ async function gql(query: string, variables: Record<string, unknown> = {}): Prom
     headers,
     body: JSON.stringify({ query, variables })
   });
+
+  // Handle rate limiting errors
+  if (res.status === 429) {
+    const errorData = await res.json();
+    throw new Error(errorData.message || 'Too many requests. Please try again later.');
+  }
+
   const json = await res.json();
   if (json.errors) throw new Error(json.errors[0].message);
   return json.data;
@@ -44,6 +65,31 @@ export class GraphqlService {
     // Sync full list into IndexedDB — visible in DevTools → Application → IndexedDB → FacultyPortalDB → students
     this.idb.saveStudents(data.users).catch(console.warn);
     return data.users;
+  }
+
+  /** Fetches paginated students with optional search from the backend. */
+  async getPaginatedStudents(page: number = 1, pageSize: number = 5, search: string = ''): Promise<PaginatedStudents> {
+    const data = await gql(
+      `query GetPaginatedUsers($page: Int, $pageSize: Int, $search: String) {
+        paginatedUsers(page: $page, pageSize: $pageSize, search: $search) {
+          users { id name email english tamil maths total englishStatus tamilStatus mathsStatus }
+          pagination {
+            currentPage
+            pageSize
+            totalPages
+            totalCount
+            hasNextPage
+            hasPreviousPage
+          }
+        }
+      }`,
+      { page, pageSize, search: search || null }
+    ) as { paginatedUsers: PaginatedStudents };
+    
+    // Optionally sync to IndexedDB
+    this.idb.saveStudents(data.paginatedUsers.users).catch(console.warn);
+    
+    return data.paginatedUsers;
   }
 
   /** Creates a student in the DB and upserts the new record into IndexedDB. */
