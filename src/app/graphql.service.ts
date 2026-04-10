@@ -67,11 +67,17 @@ export class GraphqlService {
     return data.users;
   }
 
-  /** Fetches paginated students with optional search from the backend. */
-  async getPaginatedStudents(page: number = 1, pageSize: number = 5, search: string = ''): Promise<PaginatedStudents> {
+  /** Fetches paginated students with optional search and sorting from the backend. */
+  async getPaginatedStudents(
+    page: number = 1, 
+    pageSize: number = 5, 
+    search: string = '',
+    sortBy: string = 'id',
+    sortOrder: string = 'ASC'
+  ): Promise<PaginatedStudents> {
     const data = await gql(
-      `query GetPaginatedUsers($page: Int, $pageSize: Int, $search: String) {
-        paginatedUsers(page: $page, pageSize: $pageSize, search: $search) {
+      `query GetPaginatedUsers($page: Int, $pageSize: Int, $search: String, $sortBy: String, $sortOrder: String) {
+        paginatedUsers(page: $page, pageSize: $pageSize, search: $search, sortBy: $sortBy, sortOrder: $sortOrder) {
           users { id name email english tamil maths total englishStatus tamilStatus mathsStatus }
           pagination {
             currentPage
@@ -83,7 +89,7 @@ export class GraphqlService {
           }
         }
       }`,
-      { page, pageSize, search: search || null }
+      { page, pageSize, search: search || null, sortBy, sortOrder }
     ) as { paginatedUsers: PaginatedStudents };
     
     // Optionally sync to IndexedDB

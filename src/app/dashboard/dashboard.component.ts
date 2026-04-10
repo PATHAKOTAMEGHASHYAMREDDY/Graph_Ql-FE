@@ -42,6 +42,10 @@ export class DashboardComponent implements OnInit {
     hasPreviousPage: false
   };
 
+  // Sorting
+  sortBy: string = 'id';
+  sortOrder: string = 'ASC';
+
   newName = '';
   newEmail = '';
 
@@ -190,6 +194,30 @@ export class DashboardComponent implements OnInit {
     this.onSearch();
   }
 
+  // ── Sorting ────────────────────────────────────────────────────────────────
+
+  async sortByColumn(column: string) {
+    if (this.sortBy === column) {
+      // Toggle sort order if clicking same column
+      this.sortOrder = this.sortOrder === 'ASC' ? 'DESC' : 'ASC';
+    } else {
+      // New column, default to ASC
+      this.sortBy = column;
+      this.sortOrder = 'ASC';
+    }
+    this.pagination.currentPage = 1; // Reset to first page when sorting
+    await this.loadStudents();
+  }
+
+  getSortIcon(column: string): string {
+    if (this.sortBy !== column) {
+      return '↕'; // Both arrows when not sorted by this column
+    }
+    return this.sortOrder === 'ASC' ? '↑' : '↓';
+  }
+
+  // ── Pagination ─────────────────────────────────────────────────────────────
+
   async goToPage(page: number) {
     if (page >= 1 && page <= this.pagination.totalPages) {
       this.pagination.currentPage = page;
@@ -248,7 +276,9 @@ export class DashboardComponent implements OnInit {
       const result = await this.gql.getPaginatedStudents(
         this.pagination.currentPage,
         this.pagination.pageSize,
-        this.searchQuery.trim()
+        this.searchQuery.trim(),
+        this.sortBy,
+        this.sortOrder
       );
       this.students = result.users;
       this.pagination = result.pagination;

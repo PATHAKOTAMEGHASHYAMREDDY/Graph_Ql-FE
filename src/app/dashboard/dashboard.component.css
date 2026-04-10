@@ -187,6 +187,40 @@ th {
   font-weight: 600;
   border-bottom: 2px solid #eee;
 }
+
+/* Sortable column headers */
+th.sortable {
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.2s ease;
+  position: relative;
+  padding-right: 30px; /* Make room for arrow on the right */
+}
+
+th.sortable:hover {
+  background: #eef0f8;
+  color: #6c63ff;
+}
+
+th.sortable:active {
+  transform: scale(0.98);
+}
+
+/* Sort arrow positioned on the right */
+.sort-arrow {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 14px;
+  color: #999;
+  transition: color 0.2s ease;
+}
+
+th.sortable:hover .sort-arrow {
+  color: #6c63ff;
+}
+
 td {
   padding: 12px 14px;
   border-bottom: 1px solid #f0f0f0;

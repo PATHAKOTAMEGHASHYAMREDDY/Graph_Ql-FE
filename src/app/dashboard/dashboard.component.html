@@ -74,13 +74,27 @@
           <table>
             <thead>
               <tr>
-                <th>ID</th>
-                <th>Name</th>
-                <th>Email</th>
-                <th>English</th>
-                <th>Tamil</th>
-                <th>Maths</th>
-                <th class="total-col">Total</th>
+                <th class="sortable" (click)="sortByColumn('id')">
+                  ID <span class="sort-arrow">{{ getSortIcon('id') }}</span>
+                </th>
+                <th class="sortable" (click)="sortByColumn('name')">
+                  Name <span class="sort-arrow">{{ getSortIcon('name') }}</span>
+                </th>
+                <th class="sortable" (click)="sortByColumn('email')">
+                  Email <span class="sort-arrow">{{ getSortIcon('email') }}</span>
+                </th>
+                <th class="sortable" (click)="sortByColumn('english')">
+                  English <span class="sort-arrow">{{ getSortIcon('english') }}</span>
+                </th>
+                <th class="sortable" (click)="sortByColumn('tamil')">
+                  Tamil <span class="sort-arrow">{{ getSortIcon('tamil') }}</span>
+                </th>
+                <th class="sortable" (click)="sortByColumn('maths')">
+                  Maths <span class="sort-arrow">{{ getSortIcon('maths') }}</span>
+                </th>
+                <th class="sortable total-col" (click)="sortByColumn('total')">
+                  Total <span class="sort-arrow">{{ getSortIcon('total') }}</span>
+                </th>
                 <th>Status</th>
                 <th>Actions</th>
                 <th>Files</th>
