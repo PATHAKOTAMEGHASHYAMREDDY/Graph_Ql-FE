@@ -194,6 +194,13 @@ export class DashboardComponent implements OnInit {
     this.onSearch();
   }
 
+  async onPageSizeChange() {
+    // Convert string to number (select returns string)
+    this.pagination.pageSize = Number(this.pagination.pageSize);
+    this.pagination.currentPage = 1; // Reset to first page when changing page size
+    await this.loadStudents();
+  }
+
   // ── Sorting ────────────────────────────────────────────────────────────────
 
   async sortByColumn(column: string) {
@@ -273,9 +280,12 @@ export class DashboardComponent implements OnInit {
     this.loading = true;
     this.error = '';
     try {
+      // Ensure pageSize is a number (select elements return strings)
+      const pageSize = Number(this.pagination.pageSize);
+      
       const result = await this.gql.getPaginatedStudents(
         this.pagination.currentPage,
-        this.pagination.pageSize,
+        pageSize,
         this.searchQuery.trim(),
         this.sortBy,
         this.sortOrder
