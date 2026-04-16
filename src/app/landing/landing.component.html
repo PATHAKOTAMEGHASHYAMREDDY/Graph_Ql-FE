@@ -1,0 +1,28 @@
+<div class="landing-page">
+  <div class="landing-card">
+    <div class="landing-logo">🎓</div>
+    
+    <div class="landing-header">
+      <h1>Student Management System</h1>
+      <p>Select your portal to continue</p>
+    </div>
+
+    <div class="portal-options">
+      <button class="portal-btn faculty-btn" (click)="goToFacultyLogin()">
+        <div class="btn-icon">👨‍🏫</div>
+        <div class="btn-content">
+          <h3>Faculty Portal</h3>
+          <p>Manage students and marks</p>
+        </div>
+      </button>
+
+      <button class="portal-btn student-btn" (click)="goToStudentLogin()">
+        <div class="btn-icon">👨‍🎓</div>
+        <div class="btn-content">
+          <h3>Student Portal</h3>
+          <p>View your performance</p>
+        </div>
+      </button>
+    </div>
+  </div>
+</div>

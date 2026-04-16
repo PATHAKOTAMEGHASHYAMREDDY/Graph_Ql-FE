@@ -55,13 +55,15 @@
         </div>
 
         <div class="field">
-          <label for="signup-class">Class &amp; Section</label>
+          <label for="signup-section">Section</label>
           <div class="input-wrap">
             <mat-icon class="input-icon">class</mat-icon>
-            <input id="signup-class" type="text" placeholder="e.g. 10th A, Class 6B, Year 2"
-              [(ngModel)]="classSection" name="classSection" />
+            <select id="signup-section" [(ngModel)]="section" name="section">
+              <option value="" disabled>Select your section</option>
+              <option *ngFor="let sec of sections" [value]="sec">{{ sec }}</option>
+            </select>
           </div>
-          <span class="field-hint">The class you manage (e.g. 10th A, 11th Science B)</span>
+          <span class="field-hint">Select the section you manage</span>
         </div>
         <div class="field">
           <label for="signup-email">Email Address</label>

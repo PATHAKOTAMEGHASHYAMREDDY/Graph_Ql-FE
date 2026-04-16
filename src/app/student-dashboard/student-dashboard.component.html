@@ -1,0 +1,136 @@
+<div class="dashboard-container">
+  <!-- Real-time Update Notification -->
+  <div class="update-notification" *ngIf="showUpdateNotification">
+    <div class="notification-content">
+      <span class="notification-icon">✨</span>
+      <span class="notification-text">Your marks have been updated!</span>
+    </div>
+  </div>
+
+  <!-- WebSocket Connection Status -->
+  <div class="ws-status" [class.connected]="wsConnected" [class.disconnected]="!wsConnected">
+    <span class="ws-indicator"></span>
+    <span class="ws-text">{{ wsConnected ? 'Live Updates Active' : 'Connecting...' }}</span>
+  </div>
+
+  <nav class="navbar">
+    <div class="nav-content">
+      <h1 class="logo">Student Portal</h1>
+      <div class="nav-actions">
+        <span class="welcome-text">Welcome, {{ student?.name || 'Student' }}</span>
+        <button class="btn-logout" (click)="logout()">Logout</button>
+      </div>
+    </div>
+  </nav>
+
+  <div class="main-content">
+    <div class="profile-section">
+      <div class="profile-card">
+        <div class="profile-header">
+          <div class="avatar">{{ getInitial() }}</div>
+          <div class="profile-info">
+            <h2>{{ student?.name || 'Student' }}</h2>
+            <p class="email">{{ student?.email || '' }}</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="summary-card">
+        <h3>Overall Performance</h3>
+        <div class="summary-stats">
+          <div class="stat-item">
+            <span class="stat-label">Total Marks</span>
+            <span class="stat-value">{{ student?.total || 0 }} / 300</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Percentage</span>
+            <span class="stat-value">{{ totalPercentage }}%</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Grade</span>
+            <span class="stat-value" [ngClass]="getGradeClass()">{{ getGrade() }}</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Status</span>
+            <span class="stat-value" [ngClass]="getStatusClass(overallStatus)">{{ overallStatus }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="marks-section">
+      <h2 class="section-title">Subject-wise Performance</h2>
+      
+      <div class="marks-grid">
+        <!-- English Card -->
+        <div class="subject-card">
+          <div class="subject-header">
+            <h3>English</h3>
+            <span class="subject-status" [ngClass]="getStatusClass(student?.englishStatus || 'Fail')">
+              {{ student?.englishStatus || 'N/A' }}
+            </span>
+          </div>
+          <div class="marks-display">
+            <div class="marks-value">{{ student?.english || 0 }}</div>
+            <div class="marks-total">/ 100</div>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" [style.width.%]="student?.english || 0"></div>
+          </div>
+          <div class="marks-percentage">{{ student?.english || 0 }}%</div>
+        </div>
+
+        <!-- Tamil Card -->
+        <div class="subject-card">
+          <div class="subject-header">
+            <h3>Tamil</h3>
+            <span class="subject-status" [ngClass]="getStatusClass(student?.tamilStatus || 'Fail')">
+              {{ student?.tamilStatus || 'N/A' }}
+            </span>
+          </div>
+          <div class="marks-display">
+            <div class="marks-value">{{ student?.tamil || 0 }}</div>
+            <div class="marks-total">/ 100</div>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" [style.width.%]="student?.tamil || 0"></div>
+          </div>
+          <div class="marks-percentage">{{ student?.tamil || 0 }}%</div>
+        </div>
+
+        <!-- Maths Card -->
+        <div class="subject-card">
+          <div class="subject-header">
+            <h3>Mathematics</h3>
+            <span class="subject-status" [ngClass]="getStatusClass(student?.mathsStatus || 'Fail')">
+              {{ student?.mathsStatus || 'N/A' }}
+            </span>
+          </div>
+          <div class="marks-display">
+            <div class="marks-value">{{ student?.maths || 0 }}</div>
+            <div class="marks-total">/ 100</div>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" [style.width.%]="student?.maths || 0"></div>
+          </div>
+          <div class="marks-percentage">{{ student?.maths || 0 }}%</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="info-section">
+      <div class="info-card">
+        <h3>📊 Performance Insights</h3>
+        <ul>
+          <li *ngIf="totalPercentage >= 75">Excellent performance! Keep up the great work! 🌟</li>
+          <li *ngIf="totalPercentage >= 50 && totalPercentage < 75">Good progress! A little more effort will take you to the top! 💪</li>
+          <li *ngIf="totalPercentage < 50">Don't give up! Focus on improving your weak areas. 📚</li>
+          <li *ngIf="student?.englishStatus === 'Fail'">⚠️ English needs improvement (minimum 40 marks required)</li>
+          <li *ngIf="student?.tamilStatus === 'Fail'">⚠️ Tamil needs improvement (minimum 40 marks required)</li>
+          <li *ngIf="student?.mathsStatus === 'Fail'">⚠️ Mathematics needs improvement (minimum 40 marks required)</li>
+          <li *ngIf="overallStatus === 'Pass'">✅ All subjects passed! Congratulations!</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>

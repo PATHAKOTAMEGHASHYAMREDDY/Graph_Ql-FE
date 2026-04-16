@@ -19,10 +19,13 @@ export class SignupComponent {
 
   name = '';
   email = '';
-  classSection = '';
+  section = '';
   otp = '';
   password = '';
   confirmPassword = '';
+
+  // Section options
+  sections = ['S01', 'S02', 'S03', 'S04', 'S05', 'S06', 'S07', 'S08'];
 
   loading = false;
   error = '';
@@ -46,7 +49,7 @@ export class SignupComponent {
   async sendOtp() {
     this.error = '';
     if (!this.name.trim()) { this.error = 'Please enter your full name.'; return; }
-    if (!this.classSection.trim()) { this.error = 'Please enter your class/section.'; return; }
+    if (!this.section) { this.error = 'Please select a section.'; return; }
     if (!this.email.trim()) { this.error = 'Please enter your email address.'; return; }
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(this.email.trim())) { this.error = 'Please enter a valid email address.'; return; }
@@ -111,7 +114,7 @@ export class SignupComponent {
     }
     this.loading = true;
     try {
-      await this.auth.verifyOtpAndRegister(this.name.trim(), this.email.trim(), this.otp.trim(), this.password, this.classSection.trim());
+      await this.auth.verifyOtpAndRegister(this.name.trim(), this.email.trim(), this.otp.trim(), this.password, this.section);
       this.router.navigate(['/dashboard']);
     } catch (e: unknown) {
       this.error = (e as Error).message;

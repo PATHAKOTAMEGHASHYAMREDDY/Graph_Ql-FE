@@ -2,14 +2,8 @@ import { Injectable, OnDestroy } from '@angular/core';
 import { Router } from '@angular/router';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
-import { IndexedDbService } from '../indexed-db.service';
 
 // ── Crypto helper ────────────────────────────────────────────────────────────
-/**
- * SHA-256 hash a string using the browser's native Web Crypto API.
- * The result is a lowercase hex string (64 chars).
- * This runs entirely in the browser — no external library needed.
- */
 async function sha256(message: string): Promise<string> {
   const msgBuffer = new TextEncoder().encode(message);
   const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
@@ -19,18 +13,23 @@ async function sha256(message: string): Promise<string> {
 
 // ── Interfaces ──────────────────────────────────────────────────────────────
 
-export interface Faculty {
+export interface Student {
   id: number;
   name: string;
   email: string;
-  classSection?: string;
-  createdAt?: string;
+  english: number;
+  tamil: number;
+  maths: number;
+  total: number;
+  englishStatus: string;
+  tamilStatus: string;
+  mathsStatus: string;
 }
 
-export interface AuthPayload {
+export interface StudentAuthPayload {
   token: string;
   refreshToken: string;
-  faculty: Faculty;
+  student: Student;
   debug?: {
     type: string;
     email?: string;
@@ -45,11 +44,11 @@ export interface AuthPayload {
 
 // ── Constants ────────────────────────────────────────────────────────────────
 const API = environment.apiUrl;
-const TOKEN_KEY = 'faculty_token';
-const REFRESH_TOKEN_KEY = 'faculty_refresh_token';
-const FACULTY_KEY = 'faculty_data';
+const TOKEN_KEY = 'student_token';
+const REFRESH_TOKEN_KEY = 'student_refresh_token';
+const STUDENT_KEY = 'student_data';
 
-// ── GraphQL helper with debug logging ─────────────────────────────────────────
+// ── GraphQL helper ─────────────────────────────────────────────────────────
 async function gql(
   query: string,
   variables: Record<string, unknown> = {},
@@ -64,7 +63,6 @@ async function gql(
     body: JSON.stringify({ query, variables }),
   });
 
-  // Handle rate limiting errors (429 status)
   if (res.status === 429) {
     const errorData = await res.json();
     console.group('🚫 Rate Limit Exceeded');
@@ -76,14 +74,12 @@ async function gql(
 
   const json = await res.json();
   
-  // Log GraphQL responses for debugging
   if (json.errors) {
     const error = json.errors[0];
     console.group('🔴 GraphQL Error');
     console.log('Message:', error.message);
     console.log('Extensions:', error.extensions);
     
-    // Log rate limiting info if present
     if (error.extensions?.debug) {
       console.group('📊 Rate Limit Debug Info');
       console.log('Type:', error.extensions.debug.type);
@@ -98,12 +94,11 @@ async function gql(
     throw new Error(error.message);
   }
   
-  // Log successful responses with debug info
-  if (json.data?.loginFaculty?.debug) {
-    console.group('✅ Login Success Debug Info');
-    console.log('Type:', json.data.loginFaculty.debug.type);
-    console.log('Remaining Attempts:', json.data.loginFaculty.debug.remainingAttempts);
-    console.log('Timestamp:', json.data.loginFaculty.debug.timestamp);
+  if (json.data?.loginStudent?.debug) {
+    console.group('✅ Student Login Success Debug Info');
+    console.log('Type:', json.data.loginStudent.debug.type);
+    console.log('Remaining Attempts:', json.data.loginStudent.debug.remainingAttempts);
+    console.log('Timestamp:', json.data.loginStudent.debug.timestamp);
     console.groupEnd();
   }
   
@@ -113,66 +108,41 @@ async function gql(
 // ── Service ──────────────────────────────────────────────────────────────────
 
 @Injectable({ providedIn: 'root' })
-export class AuthService implements OnDestroy {
+export class StudentAuthService implements OnDestroy {
 
-  // ── Reactive state ─────────────────────────────────────────────────────────
-  /**
-   * BehaviorSubject holding the current login state.
-   * Components & guards subscribe to `isLoggedIn$` instead of calling
-   * `localStorage` directly — this ensures the whole app reacts instantly
-   * whenever the state changes (login, logout, or auto-logout).
-   */
   private _isLoggedIn$ = new BehaviorSubject<boolean>(this._hasToken());
-
-  /** Public observable — subscribe to get real-time login-state changes. */
   readonly isLoggedIn$: Observable<boolean> = this._isLoggedIn$.asObservable();
 
-  // ── Token watcher ──────────────────────────────────────────────────────────
-  /**
-   * `setInterval` handle used for same-tab token monitoring.
-   * NOTE: The `storage` event only fires in *other* tabs.  Polling is the
-   * only reliable way to detect manual deletion in the **same** tab.
-   */
   private _tokenWatcherId: ReturnType<typeof setInterval> | null = null;
-  private readonly POLL_INTERVAL_MS = 1500; // check every 1.5 seconds
+  private readonly POLL_INTERVAL_MS = 1500;
 
-  // ── Auto-refresh timer ─────────────────────────────────────────────────────
   private refreshTimer: any = null;
-  private readonly REFRESH_BEFORE_EXPIRY_MS = 45 * 1000; // 45 seconds (refresh before 1 min expiry)
+  private readonly REFRESH_BEFORE_EXPIRY_MS = 45 * 1000; // 45 seconds
 
-  constructor(private router: Router, private idb: IndexedDbService) { }
-
-  // ── Helpers ────────────────────────────────────────────────────────────────
+  constructor(private router: Router) { }
 
   private _hasToken(): boolean {
     return !!localStorage.getItem(TOKEN_KEY);
   }
 
-  // ── Public token API ───────────────────────────────────────────────────────
-
   getToken(): string | null {
     return localStorage.getItem(TOKEN_KEY);
   }
 
-  getFaculty(): Faculty | null {
-    const raw = localStorage.getItem(FACULTY_KEY);
-    return raw ? (JSON.parse(raw) as Faculty) : null;
+  getStudent(): Student | null {
+    const raw = localStorage.getItem(STUDENT_KEY);
+    return raw ? (JSON.parse(raw) as Student) : null;
   }
 
-  /** Synchronous check — use for guards and one-off checks. */
   isLoggedIn(): boolean {
     return this._hasToken();
   }
 
-  private _store(payload: AuthPayload): void {
+  private _store(payload: StudentAuthPayload): void {
     localStorage.setItem(TOKEN_KEY, payload.token);
     localStorage.setItem(REFRESH_TOKEN_KEY, payload.refreshToken);
-    localStorage.setItem(FACULTY_KEY, JSON.stringify(payload.faculty));
-    // Mirror faculty + token into IndexedDB (visible in DevTools → Application → IndexedDB)
-    this.idb.saveFaculty(payload.faculty, payload.token).catch(console.warn);
+    localStorage.setItem(STUDENT_KEY, JSON.stringify(payload.student));
     this._isLoggedIn$.next(true);
-    
-    // Start auto-refresh timer
     this.startAutoRefresh();
   }
 
@@ -183,7 +153,7 @@ export class AuthService implements OnDestroy {
       clearTimeout(this.refreshTimer);
     }
     
-    console.log('⏰ Auto-refresh timer started (will refresh in 45 seconds)');
+    console.log('⏰ Student auto-refresh timer started (will refresh in 45 seconds)');
     
     this.refreshTimer = setTimeout(() => {
       this.refreshAccessToken();
@@ -194,62 +164,50 @@ export class AuthService implements OnDestroy {
     const refreshToken = localStorage.getItem(REFRESH_TOKEN_KEY);
     
     if (!refreshToken) {
-      console.warn('⚠️ No refresh token found');
+      console.warn('⚠️ No student refresh token found');
       this.expireSession();
       return;
     }
     
     try {
-      console.log('🔄 Refreshing access token...');
+      console.log('🔄 Refreshing student access token...');
       
       const data = await gql(
-        `mutation RefreshToken($refreshToken: String!) {
-          refreshAccessToken(refreshToken: $refreshToken) {
+        `mutation RefreshStudentToken($refreshToken: String!) {
+          refreshStudentAccessToken(refreshToken: $refreshToken) {
             token
             refreshToken
-            faculty { id name email classSection createdAt }
+            student { id name email english tamil maths total englishStatus tamilStatus mathsStatus }
           }
         }`,
         { refreshToken }
-      ) as { refreshAccessToken: AuthPayload };
+      ) as { refreshStudentAccessToken: StudentAuthPayload };
       
-      localStorage.setItem(TOKEN_KEY, data.refreshAccessToken.token);
+      localStorage.setItem(TOKEN_KEY, data.refreshStudentAccessToken.token);
       
-      console.log('✅ Access token refreshed successfully');
+      console.log('✅ Student access token refreshed successfully');
       console.log('⏰ Next refresh in 45 seconds');
       
       this.startAutoRefresh();
       
     } catch (error) {
-      console.error('❌ Failed to refresh token:', error);
+      console.error('❌ Failed to refresh student token:', error);
       this.expireSession();
     }
   }
 
   // ── Session monitoring ─────────────────────────────────────────────────────
 
-  /**
-   * Starts a periodic poll (every 1.5 s) that checks whether `faculty_token`
-   * still exists in `localStorage`.  If it has been removed — even manually
-   * via DevTools — the user is immediately logged out and redirected to /login
-   * with a "Session expired" alert.
-   *
-   * Call this once from `AppComponent.ngOnInit()` so it runs for the entire
-   * application lifetime.
-   */
   startTokenWatch(): void {
-    // Prevent multiple watchers if called more than once
     if (this._tokenWatcherId !== null) return;
 
     this._tokenWatcherId = setInterval(() => {
       if (this._isLoggedIn$.value && !this._hasToken()) {
-        // Token has been removed externally — trigger session-expired flow
         this._expireSession();
       }
     }, this.POLL_INTERVAL_MS);
   }
 
-  /** Stops the polling watcher (called on explicit logout to avoid double alerts). */
   stopTokenWatch(): void {
     if (this._tokenWatcherId !== null) {
       clearInterval(this._tokenWatcherId);
@@ -257,10 +215,6 @@ export class AuthService implements OnDestroy {
     }
   }
 
-  /**
-   * Internal — handles session-expiry triggered by the watcher or the
-   * HTTP interceptor (401 response).  Shows alert, clears storage, navigates.
-   */
   expireSession(): void {
     this._expireSession();
   }
@@ -275,11 +229,10 @@ export class AuthService implements OnDestroy {
 
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(REFRESH_TOKEN_KEY);
-    localStorage.removeItem(FACULTY_KEY);
-    this.idb.clearFaculty().catch(console.warn);
+    localStorage.removeItem(STUDENT_KEY);
     this._isLoggedIn$.next(false);
 
-    this.router.navigate(['/login'], {
+    this.router.navigate(['/student/login'], {
       queryParams: { expired: 'true' }
     }).then(() => {
       alert('⚠️ Session expired. Please log in again.');
@@ -300,8 +253,8 @@ export class AuthService implements OnDestroy {
     
     if (refreshToken) {
       gql(
-        `mutation Logout($refreshToken: String!) {
-          logout(refreshToken: $refreshToken)
+        `mutation LogoutStudent($refreshToken: String!) {
+          logoutStudent(refreshToken: $refreshToken)
         }`,
         { refreshToken }
       ).catch(console.warn);
@@ -309,13 +262,12 @@ export class AuthService implements OnDestroy {
     
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(REFRESH_TOKEN_KEY);
-    localStorage.removeItem(FACULTY_KEY);
-    this.idb.clearFaculty().catch(console.warn);
+    localStorage.removeItem(STUDENT_KEY);
     this._isLoggedIn$.next(false);
     
-    console.log('👋 Logged out successfully');
+    console.log('👋 Student logged out successfully');
     
-    this.router.navigate(['/login']).then(() => {
+    this.router.navigate(['/student/login']).then(() => {
       this.startTokenWatch();
     });
   }
@@ -324,39 +276,40 @@ export class AuthService implements OnDestroy {
 
   async sendOtp(email: string): Promise<string> {
     const data = await gql(
-      `mutation SendOtp($email: String!) { sendOtp(email: $email) }`,
+      `mutation SendStudentOtp($email: String!) { sendStudentOtp(email: $email) }`,
       { email }
-    ) as { sendOtp: string };
-    return data.sendOtp;
+    ) as { sendStudentOtp: string };
+    return data.sendStudentOtp;
   }
 
   async verifyOtpAndRegister(
     name: string,
     email: string,
+    section: string,
     otp: string,
-    password: string,
-    section: string
-  ): Promise<AuthPayload> {
+    password: string
+  ): Promise<StudentAuthPayload> {
     const hashedPassword = await sha256(password);
 
     const data = await gql(
-      `mutation Verify($name: String!, $email: String!, $otp: String!, $password: String!, $section: String!) {
-        verifyOtpAndRegister(name: $name, email: $email, otp: $otp, password: $password, section: $section) {
+      `mutation VerifyStudentOtp($name: String!, $email: String!, $section: String!, $otp: String!, $password: String!) {
+        verifyStudentOtpAndRegister(name: $name, email: $email, section: $section, otp: $otp, password: $password) {
           token
           refreshToken
-          faculty { id name email classSection createdAt }
+          student { id name email english tamil maths total englishStatus tamilStatus mathsStatus }
         }
       }`,
-      { name, email, otp, password: hashedPassword, section }
-    ) as { verifyOtpAndRegister: AuthPayload };
-    this._store(data.verifyOtpAndRegister);
-    return data.verifyOtpAndRegister;
+      { name, email, section, otp, password: hashedPassword }
+    ) as { verifyStudentOtpAndRegister: StudentAuthPayload };
+    this._store(data.verifyStudentOtpAndRegister);
+    return data.verifyStudentOtpAndRegister;
   }
 
-  // ── Login ──────────────────────────────────────────────────────────────────
+  // ── Registration ───────────────────────────────────────────────────────────
 
-  async login(email: string, password: string): Promise<AuthPayload> {
-    console.group('🔐 Login Attempt');
+  async register(name: string, email: string, password: string): Promise<StudentAuthPayload> {
+    console.group('📝 Student Registration Attempt');
+    console.log('Name:', name);
     console.log('Email:', email);
     console.log('Timestamp:', new Date().toISOString());
     
@@ -364,16 +317,52 @@ export class AuthService implements OnDestroy {
 
     try {
       const data = await gql(
-        `mutation Login($email: String!, $password: String!) {
-          loginFaculty(email: $email, password: $password) {
+        `mutation RegisterStudent($name: String!, $email: String!, $password: String!) {
+          registerStudent(name: $name, email: $email, password: $password) {
             token
             refreshToken
-            faculty { id name email createdAt }
+            student { id name email english tamil maths total englishStatus tamilStatus mathsStatus }
+            debug { type timestamp }
+          }
+        }`,
+        { name, email, password: hashedPassword }
+      ) as { registerStudent: StudentAuthPayload };
+      
+      console.log('✅ Registration successful!');
+      console.log('🔑 Access token expires in: 1 minute');
+      console.log('🔄 Refresh token expires in: 7 days');
+      console.groupEnd();
+      
+      this._store(data.registerStudent);
+      return data.registerStudent;
+    } catch (error) {
+      console.error('❌ Registration failed:', error);
+      console.groupEnd();
+      throw error;
+    }
+  }
+
+  // ── Login ──────────────────────────────────────────────────────────────────
+
+  async login(email: string, password: string): Promise<StudentAuthPayload> {
+    console.group('🔐 Student Login Attempt');
+    console.log('Email:', email);
+    console.log('Timestamp:', new Date().toISOString());
+    
+    const hashedPassword = await sha256(password);
+
+    try {
+      const data = await gql(
+        `mutation LoginStudent($email: String!, $password: String!) {
+          loginStudent(email: $email, password: $password) {
+            token
+            refreshToken
+            student { id name email english tamil maths total englishStatus tamilStatus mathsStatus }
             debug { type email maxAttempts remainingAttempts waitMinutes reason timestamp message }
           }
         }`,
         { email, password: hashedPassword }
-      ) as { loginFaculty: AuthPayload };
+      ) as { loginStudent: StudentAuthPayload };
       
       console.log('✅ Login successful!');
       console.log('🔑 Access token expires in: 1 minute');
@@ -381,16 +370,14 @@ export class AuthService implements OnDestroy {
       console.log('⏰ Auto-refresh will start in 45 seconds');
       console.groupEnd();
       
-      this._store(data.loginFaculty);
-      return data.loginFaculty;
+      this._store(data.loginStudent);
+      return data.loginStudent;
     } catch (error) {
       console.error('❌ Login failed:', error);
       console.groupEnd();
       throw error;
     }
   }
-
-  // ── Lifecycle ──────────────────────────────────────────────────────────────
 
   ngOnDestroy(): void {
     if (this.refreshTimer) {
