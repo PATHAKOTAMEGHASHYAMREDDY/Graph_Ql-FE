@@ -29,6 +29,7 @@ export interface Faculty {
 
 export interface AuthPayload {
   token: string;
+  refreshToken: string;
   faculty: Faculty;
   debug?: {
     type: string;
@@ -45,6 +46,7 @@ export interface AuthPayload {
 // ── Constants ────────────────────────────────────────────────────────────────
 const API = environment.apiUrl;
 const TOKEN_KEY = 'faculty_token';
+const REFRESH_TOKEN_KEY = 'faculty_refresh_token';
 const FACULTY_KEY = 'faculty_data';
 
 // ── GraphQL helper with debug logging ─────────────────────────────────────────
@@ -134,6 +136,10 @@ export class AuthService implements OnDestroy {
   private _tokenWatcherId: ReturnType<typeof setInterval> | null = null;
   private readonly POLL_INTERVAL_MS = 1500; // check every 1.5 seconds
 
+  // ── Auto-refresh timer ─────────────────────────────────────────────────────
+  private refreshTimer: any = null;
+  private readonly REFRESH_BEFORE_EXPIRY_MS = 45 * 1000; // 45 seconds (refresh before 1 min expiry)
+
   constructor(private router: Router, private idb: IndexedDbService) { }
 
   // ── Helpers ────────────────────────────────────────────────────────────────
@@ -160,10 +166,64 @@ export class AuthService implements OnDestroy {
 
   private _store(payload: AuthPayload): void {
     localStorage.setItem(TOKEN_KEY, payload.token);
+    localStorage.setItem(REFRESH_TOKEN_KEY, payload.refreshToken);
     localStorage.setItem(FACULTY_KEY, JSON.stringify(payload.faculty));
     // Mirror faculty + token into IndexedDB (visible in DevTools → Application → IndexedDB)
     this.idb.saveFaculty(payload.faculty, payload.token).catch(console.warn);
     this._isLoggedIn$.next(true);
+    
+    // Start auto-refresh timer
+    this.startAutoRefresh();
+  }
+
+  // ── Auto-refresh logic ─────────────────────────────────────────────────────
+
+  private startAutoRefresh(): void {
+    if (this.refreshTimer) {
+      clearTimeout(this.refreshTimer);
+    }
+    
+    console.log('⏰ Auto-refresh timer started (will refresh in 45 seconds)');
+    
+    this.refreshTimer = setTimeout(() => {
+      this.refreshAccessToken();
+    }, this.REFRESH_BEFORE_EXPIRY_MS);
+  }
+
+  private async refreshAccessToken(): Promise<void> {
+    const refreshToken = localStorage.getItem(REFRESH_TOKEN_KEY);
+    
+    if (!refreshToken) {
+      console.warn('⚠️ No refresh token found');
+      this.expireSession();
+      return;
+    }
+    
+    try {
+      console.log('🔄 Refreshing access token...');
+      
+      const data = await gql(
+        `mutation RefreshToken($refreshToken: String!) {
+          refreshAccessToken(refreshToken: $refreshToken) {
+            token
+            refreshToken
+            faculty { id name email classSection createdAt }
+          }
+        }`,
+        { refreshToken }
+      ) as { refreshAccessToken: AuthPayload };
+      
+      localStorage.setItem(TOKEN_KEY, data.refreshAccessToken.token);
+      
+      console.log('✅ Access token refreshed successfully');
+      console.log('⏰ Next refresh in 45 seconds');
+      
+      this.startAutoRefresh();
+      
+    } catch (error) {
+      console.error('❌ Failed to refresh token:', error);
+      this.expireSession();
+    }
   }
 
   // ── Session monitoring ─────────────────────────────────────────────────────
@@ -206,37 +266,56 @@ export class AuthService implements OnDestroy {
   }
 
   private _expireSession(): void {
-    // Stop the watcher FIRST so it doesn't fire again while we clear storage
     this.stopTokenWatch();
+    
+    if (this.refreshTimer) {
+      clearTimeout(this.refreshTimer);
+      this.refreshTimer = null;
+    }
 
     localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(REFRESH_TOKEN_KEY);
     localStorage.removeItem(FACULTY_KEY);
-    // Clear IndexedDB faculty store on session expiry
     this.idb.clearFaculty().catch(console.warn);
     this._isLoggedIn$.next(false);
 
-    // Navigate then show alert so the redirect happens before the dialog blocks
     this.router.navigate(['/login'], {
       queryParams: { expired: 'true' }
     }).then(() => {
       alert('⚠️ Session expired. Please log in again.');
-      // Restart the watcher for the next login
       this.startTokenWatch();
     });
   }
 
   // ── Explicit logout ────────────────────────────────────────────────────────
 
-  /** Called by the user clicking "Logout". No session-expired alert shown. */
   logout(): void {
+    const refreshToken = localStorage.getItem(REFRESH_TOKEN_KEY);
+    
     this.stopTokenWatch();
+    if (this.refreshTimer) {
+      clearTimeout(this.refreshTimer);
+      this.refreshTimer = null;
+    }
+    
+    if (refreshToken) {
+      gql(
+        `mutation Logout($refreshToken: String!) {
+          logout(refreshToken: $refreshToken)
+        }`,
+        { refreshToken }
+      ).catch(console.warn);
+    }
+    
     localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(REFRESH_TOKEN_KEY);
     localStorage.removeItem(FACULTY_KEY);
-    // Clear IndexedDB faculty store on explicit logout
     this.idb.clearFaculty().catch(console.warn);
     this._isLoggedIn$.next(false);
+    
+    console.log('👋 Logged out successfully');
+    
     this.router.navigate(['/login']).then(() => {
-      // Restart watcher so it's ready after next login
       this.startTokenWatch();
     });
   }
@@ -258,14 +337,13 @@ export class AuthService implements OnDestroy {
     password: string,
     classSection: string
   ): Promise<AuthPayload> {
-    // Hash the password with SHA-256 before sending over the network.
-    // The backend will bcrypt this hash — plaintext never leaves the browser.
     const hashedPassword = await sha256(password);
 
     const data = await gql(
       `mutation Verify($name: String!, $email: String!, $otp: String!, $password: String!, $classSection: String!) {
         verifyOtpAndRegister(name: $name, email: $email, otp: $otp, password: $password, classSection: $classSection) {
           token
+          refreshToken
           faculty { id name email classSection createdAt }
         }
       }`,
@@ -282,7 +360,6 @@ export class AuthService implements OnDestroy {
     console.log('Email:', email);
     console.log('Timestamp:', new Date().toISOString());
     
-    // Hash the password with SHA-256 before sending over the network.
     const hashedPassword = await sha256(password);
 
     try {
@@ -290,6 +367,7 @@ export class AuthService implements OnDestroy {
         `mutation Login($email: String!, $password: String!) {
           loginFaculty(email: $email, password: $password) {
             token
+            refreshToken
             faculty { id name email createdAt }
             debug { type email maxAttempts remainingAttempts waitMinutes reason timestamp message }
           }
@@ -297,13 +375,16 @@ export class AuthService implements OnDestroy {
         { email, password: hashedPassword }
       ) as { loginFaculty: AuthPayload };
       
-      console.log('Login successful!');
+      console.log('✅ Login successful!');
+      console.log('🔑 Access token expires in: 1 minute');
+      console.log('🔄 Refresh token expires in: 7 days');
+      console.log('⏰ Auto-refresh will start in 45 seconds');
       console.groupEnd();
       
       this._store(data.loginFaculty);
       return data.loginFaculty;
     } catch (error) {
-      console.error('Login failed:', error);
+      console.error('❌ Login failed:', error);
       console.groupEnd();
       throw error;
     }
@@ -312,6 +393,9 @@ export class AuthService implements OnDestroy {
   // ── Lifecycle ──────────────────────────────────────────────────────────────
 
   ngOnDestroy(): void {
+    if (this.refreshTimer) {
+      clearTimeout(this.refreshTimer);
+    }
     this.stopTokenWatch();
     this._isLoggedIn$.complete();
   }
