@@ -111,7 +111,7 @@ export class GraphqlService {
   }
 
   /** Updates student info and syncs the updated record into IndexedDB. */
-  async updateStudent(id: number, name: string, email: string): Promise<Student> {
+  async updateStudent(id: number, name: string, email: string | null): Promise<Student> {
     const data = await gql(
       `mutation Update($id: Int!, $name: String, $email: String) {
         updateUser(id: $id, name: $name, email: $email) { id name email english tamil maths total englishStatus tamilStatus mathsStatus }

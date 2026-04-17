@@ -171,8 +171,8 @@
                   <!-- Edit student info -->
                   <ng-container *ngIf="editingId === student.id">
                     <td>{{ student.id }}</td>
-                    <td><input type="text"  [(ngModel)]="editName" /></td>
-                    <td><input type="email" [(ngModel)]="editEmail" /></td>
+                    <td><input type="text"  [(ngModel)]="editName" placeholder="Student name" /></td>
+                    <td>{{ student.email }}</td>
                     <td>{{ student.english }}</td>
                     <td>{{ student.tamil }}</td>
                     <td>{{ student.maths }}</td>

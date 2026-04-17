@@ -17,6 +17,7 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
   loading = false;
   wsConnected = false;
   showUpdateNotification = false;
+  updateMessage = 'Your profile has been updated!';
   
   private marksSubscription?: Subscription;
   private connectionSubscription?: Subscription;
@@ -43,12 +44,32 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
       
       // Subscribe to marks updates
       this.marksSubscription = this.wsService.marksUpdate$.subscribe(update => {
-        if (update && this.student && update.id === this.student.id) {
-          console.log('📊 Received marks update:', update);
+        if (!update) return;
+        
+        // Handle account deletion
+        if ((update as any).type === 'account_deleted') {
+          console.log('🚫 Account deleted by faculty');
+          alert('Your account has been deleted by faculty. You will be logged out.');
+          this.wsService.disconnect();
+          this.auth.logout();
+          return;
+        }
+        
+        // Handle profile/marks updates
+        if (this.student && update.id === this.student.id) {
+          console.log('📊 Received profile/marks update:', update);
+          
+          // Check what changed
+          const nameChanged = update.name !== this.student.name;
+          const marksChanged = update.english !== this.student.english || 
+                              update.tamil !== this.student.tamil || 
+                              update.maths !== this.student.maths;
           
           // Update student data
           this.student = {
             ...this.student,
+            name: update.name,
+            email: update.email,
             english: update.english,
             tamil: update.tamil,
             maths: update.maths,
@@ -61,11 +82,29 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
           // Update localStorage
           localStorage.setItem('student_data', JSON.stringify(this.student));
           
+          // Set notification message based on what changed
+          if (nameChanged && marksChanged) {
+            this.updateMessage = 'Your name and marks have been updated!';
+          } else if (nameChanged) {
+            this.updateMessage = 'Your name has been updated!';
+          } else if (marksChanged) {
+            this.updateMessage = 'Your marks have been updated!';
+          }
+          
           // Show notification
           this.showUpdateNotification = true;
           setTimeout(() => {
             this.showUpdateNotification = false;
           }, 5000);
+          
+          // Log what changed
+          if (nameChanged && marksChanged) {
+            console.log('✨ Name and marks updated');
+          } else if (nameChanged) {
+            console.log('✨ Name updated');
+          } else if (marksChanged) {
+            console.log('✨ Marks updated');
+          }
         }
       });
     }

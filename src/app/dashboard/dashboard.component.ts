@@ -330,11 +330,15 @@ export class DashboardComponent implements OnInit {
   }
 
   async saveEdit(id: number) {
-    if (!this.editName.trim() || !this.editEmail.trim()) return;
+    if (!this.editName.trim()) {
+      this.error = 'Name cannot be empty';
+      return;
+    }
     this.loading = true;
     this.error = '';
     try {
-      await this.gql.updateStudent(id, this.editName.trim(), this.editEmail.trim());
+      // Only send name, not email (faculty cannot change email)
+      await this.gql.updateStudent(id, this.editName.trim(), null);
       this.cancelEdit();
       // Reload current page to show updated student
       await this.loadStudents();

@@ -112,8 +112,17 @@ export class WebSocketService implements OnDestroy {
         break;
 
       case 'marks_updated':
-        console.log('📊 Marks updated:', message.data);
+        console.log('📊 Marks or profile updated:', message.data);
         this._marksUpdate$.next(message.data);
+        break;
+
+      case 'account_deleted':
+        console.log('🚫 Account has been deleted');
+        // Notify the component about account deletion
+        this._marksUpdate$.next({ 
+          type: 'account_deleted',
+          message: message.message || 'Your account has been deleted'
+        } as any);
         break;
 
       case 'pong':
